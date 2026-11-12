@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 import DashboardLayout from "../components/layout/DashboardLayout";
 import StatCard from "../components/common/StatCard";
 import UploadCard from "../components/common/UploadCard";
+import DocumentTable from "../components/common/DocumentTable";
 
 function Dashboard() {
   return (
@@ -124,6 +125,10 @@ function Dashboard() {
       </section>
 
       {/* Recent Documents */}
+      <section>
+        <DocumentTable />
+      </section>
+
     </DashboardLayout>
   );
 }
