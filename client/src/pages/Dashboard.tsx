@@ -17,10 +17,8 @@ import DocumentTable from "../components/common/DocumentTable";
 function Dashboard() {
   return (
     <DashboardLayout>
-
       {/* Welcome Section */}
       <section className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
-
         <div>
           <div className="flex items-center gap-2 text-sm font-medium text-indigo-600">
             <Sparkles size={16} />
@@ -44,13 +42,11 @@ function Dashboard() {
           Manage Documents
           <ArrowRight size={17} />
         </Link>
-
       </section>
 
       {/* Statistics */}
       <section className="mb-8 grid gap-5 sm:grid-cols-2 xl:grid-col-4">
-
-        <StatCard 
+        <StatCard
           title="Total Documents"
           value={24}
           description="Documents in your workspace"
@@ -85,12 +81,10 @@ function Dashboard() {
           color="text-purple-600"
           bgColor="bg-purple-50"
         />
-
       </section>
 
       {/* Upload Section */}
       <section className="mb-8 grid gap-6 lg:grid-cols-5">
-
         <div className="lg:col-span-3">
           <UploadCard />
         </div>
@@ -101,14 +95,11 @@ function Dashboard() {
               <Sparkles size={25} />
             </div>
 
-            <h3 className="mt-6 text-xl font-bold">
-              Chat with your Documents
-            </h3>
+            <h3 className="mt-6 text-xl font-bold">Chat with your Documents</h3>
 
             <p className="mt-3 text-sm leading-7 text-indigo-100">
-              Have questions about your PDFs? Let AI find the
-              information you need and provide answers with
-              relevant page references.
+              Have questions about your PDFs? Let AI find the information you
+              need and provide answers with relevant page references.
             </p>
           </div>
 
@@ -119,16 +110,13 @@ function Dashboard() {
             Explore Documents
             <ArrowRight size={17} />
           </Link>
-
         </div>
-
       </section>
 
       {/* Recent Documents */}
       <section>
         <DocumentTable />
       </section>
-
     </DashboardLayout>
   );
 }

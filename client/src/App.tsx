@@ -4,11 +4,10 @@ import Dashboard from "./pages/Dashboard";
 import Documents from "./pages/Documents";
 import DocumentDetails from "./pages/DocumentDetails";
 import ChatPage from "./pages/ChatPage";
-
-
+import ChatHistory from "./pages/ChatHistory";
+import Settings from "./pages/Settings";
 
 function App() {
-
   return (
     <BrowserRouter>
       <Routes>
@@ -17,9 +16,11 @@ function App() {
         <Route path="/documents" element={<Documents />} />
         <Route path="/documents/:id" element={<DocumentDetails />} />
         <Route path="/chat/:id" element={<ChatPage />} />
+        <Route path="/chat-history" element={<ChatHistory />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

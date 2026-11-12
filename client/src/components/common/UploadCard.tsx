@@ -1,28 +1,25 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { Upload, FileText, X, CheckCircle2 } from "lucide-react";
 
 function UploadCard() {
-
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [error, setError]= useState("");
+  const [error, setError] = useState("");
 
-  const handleFileChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
     setError("");
 
-    if(!file) return;
+    if (!file) return;
 
-    if(file.type !== "application/pdf") {
+    if (file.type !== "application/pdf") {
       setError("Please select a PDF file.");
       return;
     }
 
-    if(file.size > 10 * 1024 * 1024) {
+    if (file.size > 10 * 1024 * 1024) {
       setError("File size must be less than 10 MB.");
       return;
     }
@@ -34,32 +31,27 @@ function UploadCard() {
     setSelectedFile(null);
     setError("");
 
-    if(inputRef.current) {
+    if (inputRef.current) {
       inputRef.current.value = "";
     }
   };
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6">
-
       <div className="flex items-center gap-3">
         <div className="rounded-xl bg-indigo-50 p-3 text-indigo-600">
           <Upload size={22} />
         </div>
 
         <div>
-          <h3 className="font-semibold text-slate-900">
-            Upload a Document
-          </h3>
+          <h3 className="font-semibold text-slate-900">Upload a Document</h3>
 
-          <p className="text-xs text-slate-500">
-            Add a PDF to your workspace
-          </p>
+          <p className="text-xs text-slate-500">Add a PDF to your workspace</p>
         </div>
       </div>
 
       <div className="mt-6 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center transition hover:border-indigo-300">
-        <input 
+        <input
           ref={inputRef}
           type="file"
           accept=".pdf,applicatio/pdf"
@@ -76,9 +68,7 @@ function UploadCard() {
           Choose a PDF file
         </p>
 
-        <p className="mt-2 text-xs text-slate-500">
-          Maximum file size: 10 MB
-        </p>
+        <p className="mt-2 text-xs text-slate-500">Maximum file size: 10 MB</p>
 
         <button
           onClick={() => inputRef.current?.click()}
@@ -87,17 +77,11 @@ function UploadCard() {
           Browse File
         </button>
 
-        {error && (
-          <p className="mt-3 text-sm text-red-600">
-            {error}
-          </p>
-        )}
-
+        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       </div>
 
       {selectedFile && (
         <div className="mt-4 flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 p-3">
-
           <CheckCircle2 size={20} className="text-green-600" />
 
           <div className="min-w-0 flex-1">
@@ -123,7 +107,6 @@ function UploadCard() {
       <p className="mt-4 text-center text-xs text-slate-400">
         PDF files only. Your documents will be processed securely.
       </p>
-
     </div>
   );
 }
