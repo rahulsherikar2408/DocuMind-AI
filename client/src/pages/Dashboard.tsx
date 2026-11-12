@@ -1,30 +1,49 @@
+import {
+  Files,
+  CheckCircle2,
+  Clock,
+  MessageSquare,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
 
 import { Link } from "react-router-dom";
 
+import DashboardLayout from "../components/layout/DashboardLayout";
+
 function Dashboard() {
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      <div className="mx-auto max-w-6xl">
-        <Link to="/" className="font-bold text-indigo-600">
-          DocuMind AI
-        </Link>
+    <DashboardLayout>
 
-        <h1 className="mt-10 text-3xl font-bold">
-          Welcome to your Dashboard
-        </h1>
+      {/* Welcome Section */}
+      <section className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
 
-        <p className="mt-3 text-slate-600">
-          Your personal document workspace.
-        </p>
+        <div>
+          <div className="flex items-center gap-2 text-sm font-medium text-indigo-600">
+            <Sparkles size={16} />
+            Your AI Workspace
+          </div>
+
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            Welcome back, Rahul!
+          </h1>
+
+          <p className="mt-2 text-sm text-slate-500">
+            Manage your documents and continue exploring with AI.
+          </p>
+        </div>
 
         <Link
           to="/documents"
-          className="mt-6 inline-block rounded-lg bg-indigo-600 px-5 py-3 text-white"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:bg-indigo-700"
         >
-          View Documents
+          <Files size={18} />
+          Manage Documents
+          <ArrowRight size={17} />
         </Link>
-      </div>
-    </div>
+
+      </section>
+    </DashboardLayout>
   );
 }
 
