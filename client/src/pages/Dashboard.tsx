@@ -10,6 +10,7 @@ import {
 import { Link } from "react-router-dom";
 
 import DashboardLayout from "../components/layout/DashboardLayout";
+import StatCard from "../components/common/StatCard";
 
 function Dashboard() {
   return (
@@ -43,6 +44,49 @@ function Dashboard() {
         </Link>
 
       </section>
+
+      {/* Statistics */}
+      <section className="mb-8 grid gap-5 sm:grid-cols-2 xl:grid-col-4">
+
+        <StatCard 
+          title="Total Documents"
+          value={24}
+          description="Documents in your workspace"
+          icon={Files}
+          color="text-indigo-600"
+          bgColor="bg-indigo-50"
+        />
+
+        <StatCard
+          title="Processed"
+          value={20}
+          description="Successfully processed documents"
+          icon={CheckCircle2}
+          color="text-green-600"
+          bgColor="bg-green-50"
+        />
+
+        <StatCard
+          title="Processing"
+          value={3}
+          description="Documents being processed"
+          icon={Clock}
+          color="text-amber-600"
+          bgColor="bg-amber-50"
+        />
+
+        <StatCard
+          title="Conversations"
+          value={56}
+          description="AI conversations created"
+          icon={MessageSquare}
+          color="text-purple-600"
+          bgColor="bg-purple-50"
+        />
+
+      </section>
+
+      {/* Upload Section */}
     </DashboardLayout>
   );
 }
