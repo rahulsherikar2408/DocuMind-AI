@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 
 import DashboardLayout from "../components/layout/DashboardLayout";
 import StatCard from "../components/common/StatCard";
+import UploadCard from "../components/common/UploadCard";
 
 function Dashboard() {
   return (
@@ -87,6 +88,42 @@ function Dashboard() {
       </section>
 
       {/* Upload Section */}
+      <section className="mb-8 grid gap-6 lg:grid-cols-5">
+
+        <div className="lg:col-span-3">
+          <UploadCard />
+        </div>
+
+        <div className="flex flex-col justify-between rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-7 text-white lg:col-span-2">
+          <div>
+            <div className="inline-flex rounded-2xl bg-white/15 p-3">
+              <Sparkles size={25} />
+            </div>
+
+            <h3 className="mt-6 text-xl font-bold">
+              Chat with your Documents
+            </h3>
+
+            <p className="mt-3 text-sm leading-7 text-indigo-100">
+              Have questions about your PDFs? Let AI find the
+              information you need and provide answers with
+              relevant page references.
+            </p>
+          </div>
+
+          <Link
+            to="/documents"
+            className="mt-8 inline-flex w-fit items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50"
+          >
+            Explore Documents
+            <ArrowRight size={17} />
+          </Link>
+
+        </div>
+
+      </section>
+
+      {/* Recent Documents */}
     </DashboardLayout>
   );
 }
