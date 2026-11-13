@@ -4,10 +4,11 @@ import { Link } from "react-router-dom";
 
 import DashboardLayout from "../components/layout/DashboardLayout";
 import DocumentFilters from "../components/documents/DocumentFilters";
+import DocumentCard from "../components/documents/DocumentCard";
+import DocumentUpload from "../components/documents/DocumentUpload";
 
 import type { Document } from "../types/document";
 import type { ViewMode } from "../components/documents/DocumentFilters";
-import DocumentCard from "../components/documents/DocumentCard";
 
 const initialDocuments: Document[] = [
   {
@@ -167,9 +168,7 @@ function Documents() {
 
         {/* Document Count */}
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-slate-800">
-            All Documents
-          </h2>
+          <h2 className="font-semibold text-slate-800">All Documents</h2>
           <p className="text-sm text-slate-500">
             {filteredDocuments.length} documents found
           </p>
@@ -179,7 +178,7 @@ function Documents() {
         {view === "grid" && filteredDocuments.length > 0 && (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {filteredDocuments.map((document) => (
-              <DocumentCard 
+              <DocumentCard
                 key={document.id}
                 document={document}
                 onDelete={handleDelete}
@@ -189,7 +188,118 @@ function Documents() {
         )}
 
         {/* Table View */}
+        {view === "table" && filteredDocuments.length > 0 && (
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+            <table className="w-full min-w-[750px] text-left text-sm">
+              <thead className="border-b border-slate-200 bg-slate-50 text-slate-500">
+                <tr>
+                  <th className="px-5 py-4 font-medium">Document</th>
+                  <th className="px-5 py-4 font-medium">Date</th>
+                  <th className="px-5 py-4 font-medium">Size</th>
+                  <th className="px-5 py-4 font-medium">Pages</th>
+                  <th className="px-5 py-4 font-medium">Status</th>
+                  <th className="px-5 py-4 text-right font-medium">Actions</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-slate-100">
+                {filteredDocuments.map((document) => (
+                  <tr
+                    key={document.id}
+                    className="transition hover:bg-slate-50"
+                  >
+                    <td className="px-5 py-4">
+                      <Link
+                        to={`/documents/${document.id}`}
+                        className="flex items-center gap-3 font-medium text-slate-700 hover:text-indigo-600"
+                      >
+                        <FileText size={20} className="shrink-0 text-red-500" />
+                        {document.name}
+                      </Link>
+                    </td>
+
+                    <td className="px-5 py-4 text-slate-500">
+                      {document.date}
+                    </td>
+
+                    <td className="px-5 py-4 text-slate-500">
+                      {document.size}
+                    </td>
+
+                    <td className="px-5 py-4 text-slate-500">
+                      {document.pages}
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-medium ${
+                          document.status === "Completed"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : document.status === "Processing"
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-red-50 text-red-700"
+                        }`}
+                      >
+                        {document.status}
+                      </span>
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <div className="flex items-center justify-end gap-4">
+                        <Link
+                          to={`/chat/${document.id}`}
+                          title="Chat with document"
+                          className="text-slate-400 hover:text-indigo-600"
+                        >
+                          <MessageSquare size={18} />
+                        </Link>
+
+                        <button
+                          type="button"
+                          title="Delete document"
+                          onClick={() => handleDelete(document.id)}
+                          className="text-slate-400 hover:text-red-600"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {filteredDocuments.length === 0 && (
+          <div className="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-16 text-center">
+            <FileText size={40} className="mx-auto text-slate-300" />
+
+            <h3 className="mt-4 font-semibold text-slate-800">
+              No documents found
+            </h3>
+
+            <p className="mt-2 text-sm text-slate-500">
+              Try changing your search or status filter.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setStatus("All");
+              }}
+              className="mt-4 text-sm font-medium text-indigo-600 hover:text-indigo-700"
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Upload Dialog */}
+      {showUpload && <DocumentUpload onClose={() => setShowUpload(false)} />}
     </DashboardLayout>
   );
 }
