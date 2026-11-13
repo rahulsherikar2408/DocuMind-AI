@@ -7,6 +7,7 @@ import DocumentFilters from "../components/documents/DocumentFilters";
 
 import type { Document } from "../types/document";
 import type { ViewMode } from "../components/documents/DocumentFilters";
+import DocumentCard from "../components/documents/DocumentCard";
 
 const initialDocuments: Document[] = [
   {
@@ -165,6 +166,29 @@ function Documents() {
         />
 
         {/* Document Count */}
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-slate-800">
+            All Documents
+          </h2>
+          <p className="text-sm text-slate-500">
+            {filteredDocuments.length} documents found
+          </p>
+        </div>
+
+        {/* Grid View */}
+        {view === "grid" && filteredDocuments.length > 0 && (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {filteredDocuments.map((document) => (
+              <DocumentCard 
+                key={document.id}
+                document={document}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Table View */}
       </div>
     </DashboardLayout>
   );
