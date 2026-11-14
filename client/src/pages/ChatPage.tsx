@@ -201,6 +201,14 @@ function ChatPage() {
         )}
 
         {/* Chat Input */}
+        <div className="border-t border-slate-200 bg-white p-4 sm:px-6">
+          <ChatInput onSend={handleSendMessage} />
+
+          <p className="mt-2 text-center text-xs text-slate-400">
+            Demo responses are placeholders. Connect the AI backend in a later
+            phase.
+          </p>
+        </div>
       </div>
     </DashboardLayout>
   );
