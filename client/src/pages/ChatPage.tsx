@@ -7,7 +7,7 @@ import ChatHeader from "../components/chat/ChatHeader";
 import ChatMessage from "../components/chat/ChatMessage";
 import ChatInput from "../components/chat/ChatInput";
 
-// import type { Message } from "../components/chat/ChatMessage";
+import type { Message } from "../components/chat/ChatMessage";
 import type { Document } from "../types/document";
 
 const sampleDocuments: Document[] = [
@@ -76,7 +76,9 @@ function ChatPage() {
     {
       id: "welcome",
       role: "assistant",
-      content: document ? `Hello I've opened "${document.name}". I'm your DocuMind AI assistant. You can ask questions about this document, request summaries, or explore important concepts.` : "Welcome to DocuMind AI!",
+      content: document
+        ? `Hello I've opened "${document.name}". I'm your DocuMind AI assistant. You can ask questions about this document, request summaries, or explore important concepts.`
+        : "Welcome to DocuMind AI!",
     },
   ]);
 
@@ -90,15 +92,18 @@ function ChatPage() {
     const assistantMessage: Message = {
       id: crypto.randomUUID(),
       role: "assistant",
-      content: "This is a sample AI response for the frontend demonstration. Once we integrate Gemini and the RAG pipeline, I'll search the relevant document sections and generate an answer based on their actual content.",
+      content:
+        "This is a sample AI response for the frontend demonstration. Once we integrate Gemini and the RAG pipeline, I'll search the relevant document sections and generate an answer based on their actual content.",
       sources: [
         {
           page: 12,
-          excerpt: "This is a placeholder source reference. Actual references will come from the retrieved document chunks.",
+          excerpt:
+            "This is a placeholder source reference. Actual references will come from the retrieved document chunks.",
         },
         {
           page: 12,
-          excerpt: "The real AI response will include relevant text extracted from this page.",
+          excerpt:
+            "The real AI response will include relevant text extracted from this page.",
         },
       ],
     };
@@ -110,7 +115,7 @@ function ChatPage() {
     ]);
   };
 
-  if(!document) {
+  if (!document) {
     return (
       <DashboardLayout>
         <div className="rounded-xl border border-slate-200 bg-white p-10 text-center">
@@ -167,7 +172,13 @@ function ChatPage() {
         <ChatHeader documentName={document.name} />
 
         {/* Messages */}
+        <div className="flex-1 space-y-6 overflow-y-auto p-4 sm:p-6">
+          {message.map((message) => (
+            <ChatMessage key={message.id} message={message} />
+          ))}
+        </div>
 
+        {/* Suggested Questions */}
       </div>
     </DashboardLayout>
   );
