@@ -179,6 +179,28 @@ function ChatPage() {
         </div>
 
         {/* Suggested Questions */}
+        {message.length === 1 && (
+          <div className="border-t border-slate-200 bg-white px-4 py-4 sM:px-6">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Suggested questions
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              {suggestions.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  onClick={() => handleSendMessage(suggestion)}
+                  className="rounded-full border border-slate-200 px-3 py-2 text-xs text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Chat Input */}
       </div>
     </DashboardLayout>
   );
