@@ -10,6 +10,8 @@ import Settings from "./pages/Settings";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 
+import AuthTestPage from "./pages/AuthTestPage";
+
 import ProtectedRoute from "./components/common/ProtectedRoute";
 
 function App() {
@@ -20,6 +22,15 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/sign-in/*" element={<SignInPage />} />
         <Route path="/sign-up/*" element={<SignUpPage />} />
+
+        <Route
+          path="/auth-test"
+          element={
+            <ProtectedRoute>
+              <AuthTestPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Protected routes */}
         <Route

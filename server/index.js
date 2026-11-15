@@ -7,9 +7,14 @@ import helmet from "helmet";
 import dns from "node:dns";
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
+import { clerkMiddleware, getAuth } from "@clerk/express";
+
 import connectDB from "./config/db.js";
 
 const app = express();
+
+// Clerk middleware
+app.use(clerkMiddleware());
 
 // Security header
 app.use(helmet());
@@ -22,6 +27,7 @@ app.use(
   }),
 );
 
+// Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -36,6 +42,24 @@ app.get("/api/health", (req, res) => {
 // Root route
 app.get("/", (req, res) => {
   res.send("Welcome to DocuMind AI API");
+});
+
+// Protected authentication test route
+app.get("/api/auth/me", (req, res) => {
+  const { isAuthenticated, userId } = getAuth(req);
+
+  if(!isAuthenticated) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized. Please sign in."
+    })
+  }
+
+  res.status(200).json({
+    success: true,
+    message:"Authentication successfyl!",
+    userId,
+  });
 });
 
 // Start server after database connection
