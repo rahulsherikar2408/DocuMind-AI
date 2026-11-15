@@ -8,7 +8,7 @@ function AuthTestPage() {
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const testAuthentication = async () => {
+  const testAPI = async (endpoint: string) => {
     try {
       setLoading(true);
       setResult("");
@@ -16,11 +16,11 @@ function AuthTestPage() {
       const token = await getToken();
 
       if (!token) {
-        throw new Error("Unable to retrieve Clerk token.");
+        throw new Error("Unable to retrieve authentication token.");
       }
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/auth/me`,
+        `${import.meta.env.VITE_API_URL}${endpoint}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -30,10 +30,19 @@ function AuthTestPage() {
 
       const data = await response.json();
 
-      setResult(JSON.stringify(data, null, 2));
+      setResult(
+        JSON.stringify(
+          {
+            status: response.status,
+            ...data,
+          },
+          null,
+          2
+        )
+      );
     } catch (error) {
       setResult(
-        error instanceof Error ? error.message : "Something went wrong"
+        error instanceof Error ? error.message : "Something went wrong."
       );
     } finally {
       setLoading(false);
@@ -41,22 +50,38 @@ function AuthTestPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-5 p-6">
-      <h1 className="text-2xl font-bold">Clerk Authentication Test</h1>
+    <div className="min-h-screen bg-slate-50 p-8">
+      <div className="mx-auto max-w-2xl space-y-5">
+        <h1 className="text-2xl font-bold text-slate-900">
+          DocuMind AI API Testing
+        </h1>
 
-      <button
-        onClick={testAuthentication}
-        disabled={loading}
-        className="rounded-lg bg-indigo-600 px-6 py-3 text-white disabled:opacity-50"
-      >
-        {loading ? "Testing..." : "Test Backend Authentication"}
-      </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => testAPI("/api/users/me")}
+            disabled={loading}
+            className="rounded-lg bg-indigo-600 px-5 py-3 text-white disabled:opacity-50"
+          >
+            Test User API
+          </button>
 
-      {result && (
-        <pre className="max-w-xl overflow-auto rounded-lg bg-slate-100 p-5 text-sm">
-          {result}
-        </pre>
-      )}
+          <button
+            onClick={() => testAPI("/api/documents")}
+            disabled={loading}
+            className="rounded-lg bg-emerald-600 px-5 py-3 text-white disabled:opacity-50"
+          >
+            Test Documents API
+          </button>
+        </div>
+
+        {loading && <p>Testing API...</p>}
+
+        {result && (
+          <pre className="overflow-auto rounded-lg bg-slate-900 p-5 text-sm text-green-400">
+            {result}
+          </pre>
+        )}
+      </div>
     </div>
   );
 }
