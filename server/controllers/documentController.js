@@ -68,25 +68,7 @@ export const getDocumentById = async(req, res) => {
 
 export const uploadDocument = async(req, res) => {
     try {
-        // Check whether a file was received
-        if(!req.file) {
-            return res.status(400).json({
-                success: false,
-                message: "Please select a PDF file to upload.",
-            });
-        }
-
         const { buffer, originalname, mimetype, size } = req.file;
-
-        // Validate the actual PDF file signature
-        const pdfSignature = buffer.subarray(0, 5).toString("ascii");
-
-        if(mimetype !== "application/pdf" || pdfSignature !== "%PDF-") {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid PDF file.",
-            });
-        }
 
         // Upload PDF to Cloudinary
         const result = await uploadPDFToCloudinary(

@@ -2,6 +2,7 @@ import express from "express";
 
 import requireAuth from "../middlewares/requireAuth.js";
 import upload from "../middlewares/uploadMiddleware.js";
+import validatePDF from "../middlewares/validatePDF.js";
 
 import {
   getDocuments,
@@ -15,7 +16,7 @@ const router = express.Router();
 router.use(requireAuth);
 
 // Upload a PDF
-router.post("/upload", upload.single("file"), uploadDocument);
+router.post("/upload", upload.single("file"), validatePDF , uploadDocument);
 
 // GET /api/documents
 router.get("/", getDocuments);
