@@ -20,7 +20,7 @@ interface UserResponse {
 }
 
 export const getCurrentUser = async(): Promise<User> => {
-    const response = await api.get<UserResponse>("/api/auth/me");
+    const response = await api.get<UserResponse>("/api/users/me");
 
     return response.data.user;
 }

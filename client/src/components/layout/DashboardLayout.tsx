@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Menu, Search, Bell, ChevronDown } from "lucide-react";
 
 import Sidebar from "./Sidebar";
+import { useCurrentUser } from "../../hooks/useUser";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -9,6 +10,7 @@ interface DashboardLayoutProps {
 
 function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { data: user, isLoading, error } = useCurrentUser();
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -64,15 +66,45 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
             </button>
 
             <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700">
-                R
-              </div>
+              {/* Profile Image */}
+              {isLoading ? (
+                <div className="h-9 w-9 animate-pulse rounded-full bg-slate-200" />
+              ) : user?.imageUrl ? (
+                <img
+                  src={user.imageUrl}
+                  alt="Profile"
+                  className="h-9 w-9 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700">
+                  {user?.firstName?.charAt(0).toUpperCase() ||
+                    user?.email?.charAt(0).toUpperCase() ||
+                    "U"}
+                </div>
+              )}
 
-              <div className="hidden sm:block">
-                <p className="text-sm font-semibold text-slate-800">Rahul</p>
-                <p className="text-xs text-slate-500">Free Plan</p>
+              {/* User Information */}
+              <div>
+                {isLoading ? (
+                  <>
+                    <p className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                    <p className="mt-1 h-3 w-16 animate-pulse rounded bg-slate-100" />
+                  </>
+                ) : error ? (
+                  <p className="text-xs font-semibold text-slate-800">
+                    {user?.firstName || user?.email || "User"}
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold text-slate-800">
+                      {user?.firstName || user?.email || "User"}
+                    </p>
+                    <p className="text-xs capitalize text-slate-500">
+                      {user?.plan || "Free"} Plan
+                    </p>
+                  </>
+                )}
               </div>
-
               <ChevronDown
                 size={16}
                 className="hidden text-slate-400 sm:block"
