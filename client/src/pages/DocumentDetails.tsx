@@ -3,65 +3,28 @@ import { ArrowLeft, MessageSquare, FileText } from "lucide-react";
 
 import DashboardLayout from "../components/layout/DashboardLayout";
 import DocumentInfo from "../components/documents/DocumentInfo";
-import type { Document } from "../types/document";
-
-const sampleDocuments: Document[] = [
-  {
-    id: "1",
-    name: "Software Engineering Report.pdf",
-    date: "Nov 10, 2026",
-    size: "2.4 MB",
-    pages: 45,
-    status: "Completed",
-  },
-  {
-    id: "2",
-    name: "Machine Learning Notes.pdf",
-    date: "Nov 09, 2026",
-    size: "1.8 MB",
-    pages: 32,
-    status: "Completed",
-  },
-  {
-    id: "3",
-    name: "Project Documentation.pdf",
-    date: "Nov 09, 2026",
-    size: "4.2 MB",
-    pages: 86,
-    status: "Processing",
-  },
-  {
-    id: "4",
-    name: "Database Management.pdf",
-    date: "Nov 08, 2026",
-    size: "1.2 MB",
-    pages: 28,
-    status: "Failed",
-  },
-  {
-    id: "5",
-    name: "React Development Guide.pdf",
-    date: "Nov 07, 2026",
-    size: "3.1 MB",
-    pages: 64,
-    status: "Completed",
-  },
-  {
-    id: "6",
-    name: "System Design Interview.pdf",
-    date: "Nov 06, 2026",
-    size: "2.7 MB",
-    pages: 51,
-    status: "Completed",
-  },
-];
+import { useDocument } from "../hooks/useDocuments";
 
 function DocumentDetails() {
   const { id } = useParams<{ id: string }>();
 
-  const document = sampleDocuments.find((doc) => doc.id === id);
+  const { data: document, isLoading, error } = useDocument(id || "");
 
-  if(!document) {
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex min-h-[400px] flex-col items-center justify-center">
+          <div className="h-9 w-9 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+
+          <p className="mt-4 text-sm text-slate-500">
+            Loading document details...
+          </p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error || !document) {
     return (
       <DashboardLayout>
         <div className="rounded-xl border border-slate-200 bg-white p-10 text-center">
@@ -104,9 +67,9 @@ function DocumentDetails() {
             </p>
           </div>
 
-          {document.status === "Completed" && (
+          {document.status === "completed" && (
             <Link
-              to={`/chat/${document.id}`}
+              to={`/chat/${document._id}`}
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-indigo-700"
             >
               <MessageSquare size={18} />
@@ -115,13 +78,26 @@ function DocumentDetails() {
           )}
         </div>
 
-        <DocumentInfo document={document} />
+        <DocumentInfo
+          document={{
+            id: document._id,
+            name: document.fileName,
+            date: new Date(document.createdAt).toLocaleDateString(),
+            size: `${(document.fileSize / (1024 * 1024)).toFixed(2)} MB`,
+            pages: document.pageCount,
+            status:
+              document.status === "completed"
+                ? "completed"
+                : document.status === "processing" ||
+                    document.status === "pending"
+                  ? "processing"
+                  : "failed",
+          }}
+        />
 
         <div className="rounded-xl border border-slate-200 bg-white">
           <div className="border-b border-slate-100 px-6 py-4">
-            <h2 className="font-semibold text-slate-800">
-              Document Preview
-            </h2>
+            <h2 className="font-semibold text-slate-800">Document Preview</h2>
             <p className="mt-1 text-sm text-slate-500">
               Preview of your uploaded PDF will appear here.
             </p>
@@ -137,7 +113,8 @@ function DocumentDetails() {
             </h3>
 
             <p className="mt-2 max-w-md text-s, leading-6 text-slate-500">
-              The actual PDF preview will be available after we connect document storage and PDF viewing functionality.
+              The actual PDF preview will be available after we connect document
+              storage and PDF viewing functionality.
             </p>
           </div>
         </div>

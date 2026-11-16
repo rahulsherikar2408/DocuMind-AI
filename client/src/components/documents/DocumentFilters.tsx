@@ -1,14 +1,14 @@
 import { LayoutGrid, List, Search } from "lucide-react";
-import type { DocumentStatus } from "../../types/document";
+import type { DocumentStatus } from "../../services/documentService";
 
 export type ViewMode = "grid" | "table";
 
 interface DocumentFiltersProps {
   search: string;
-  status: "All" | DocumentStatus;
+  status: DocumentStatus;
   view: ViewMode;
   onSearchChange: (value: string) => void;
-  onStatusChange: (value: "All" | DocumentStatus) => void;
+  onStatusChange: (value: "pending" | DocumentStatus) => void;
   onViewChange: (value: ViewMode) => void;
 }
 
@@ -40,7 +40,7 @@ function DocumentFilters({
         <select
           value={status}
           onChange={(event) =>
-            onStatusChange(event.target.value as "All" | DocumentStatus)
+            onStatusChange(event.target.value as "pending" | DocumentStatus)
           }
           className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 outline-none focus:border-indigo-400"
         >
