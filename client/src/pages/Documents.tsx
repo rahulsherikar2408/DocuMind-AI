@@ -118,7 +118,7 @@ function Documents() {
               Loading your documents...
             </p>
           </div>
-        )};
+        )}
 
         {/* Error State */}
         {error && !isLoading && (
@@ -127,7 +127,7 @@ function Documents() {
               Unable to Load documents.
             </p>
             <p className="mt-1 text-sm text-red-600">
-              Please check your connection and try again.
+              {error.message}
             </p>
           </div>
         )}
