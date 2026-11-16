@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
+
 import Document from "../models/Document.js";
+import uploadPDFToCloudinary from "../services/cloudinaryService.js";
+
 
 // Get all documents belonging to the logged-in user
 export const getDocuments = async(req, res) => {
@@ -59,6 +62,59 @@ export const getDocumentById = async(req, res) => {
         res.status(500).json({
             success: false,
             message: "Unable to retrieve document.",
+        });
+    }
+};
+
+export const uploadDocument = async(req, res) => {
+    try {
+        // Check whether a file was received
+        if(!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: "Please select a PDF file to upload.",
+            });
+        }
+
+        const { buffer, originalname, mimetype, size } = req.file;
+
+        // Validate the actual PDF file signature
+        const pdfSignature = buffer.subarray(0, 5).toString("ascii");
+
+        if(mimetype !== "application/pdf" || pdfSignature !== "%PDF-") {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid PDF file.",
+            });
+        }
+
+        // Upload PDF to Cloudinary
+        const result = await uploadPDFToCloudinary(
+            buffer,
+            originalname
+        );
+
+        // Return uploaded file details
+        res.status(201).json({
+            success: true,
+            message: "PDF uploaded to Cloudinary successfully.",
+            file: {
+                fileName: originalname,
+                fileSize: size,
+                mimeType: mimetype,
+                storageProvider: "cloudinary",
+                storageUrl: result.secure_url,
+                storageKey: result.public_id,
+                resourceType: result.resource_type,
+                format: result.format,
+            },
+        });
+    } catch (error) {
+        console.error("Document upload error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Unable to upload document. Please try again.",
         });
     }
 };
