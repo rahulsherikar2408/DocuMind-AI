@@ -3,6 +3,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import multer from "multer";
 
 import dns from "node:dns";
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
@@ -56,6 +57,45 @@ app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: "API route not found.",
+  });
+});
+
+// Handle upload and other API errors
+app.use((error, req, res, next) => {
+  if(error instanceof multer.MulterError) {
+    if(error.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({
+        success: false,
+        message: "File size cannot exceed 10 MB.",
+      });
+    }
+
+    if(error.code === "LIMIT_FILE_COUNT") {
+      return res.status(400).json({
+        success: false,
+        message: "Only one file can be uploaded at a time.",
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+
+  // Handle file type validations errors
+  if(error.message === "Only PDF files are allowed.") {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+
+  console.error("Unhandled server error:", error);
+
+  res.status(500).json({
+    success: false,
+    message: "Internal server error.",
   });
 });
 

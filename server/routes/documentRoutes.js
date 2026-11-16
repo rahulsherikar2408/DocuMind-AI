@@ -1,7 +1,7 @@
 import express from "express";
 
 import requireAuth from "../middlewares/requireAuth.js";
-import upload from "../middleware/uploadMiddleware.js";
+import upload from "../middlewares/uploadMiddleware.js";
 
 import {
   getDocuments,
