@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 import Document from "../models/Document.js";
 import uploadPDFToCloudinary from "../services/cloudinaryService.js";
-
+import cloudinary from "../config/cloudinary.js";
 
 // Get all documents belonging to the logged-in user
 export const getDocuments = async(req, res) => {
@@ -67,33 +67,56 @@ export const getDocumentById = async(req, res) => {
 };
 
 export const uploadDocument = async(req, res) => {
+    let uploadedFile = null;
+
     try {
         const { buffer, originalname, mimetype, size } = req.file;
 
-        // Upload PDF to Cloudinary
-        const result = await uploadPDFToCloudinary(
+        // 1. Upload PDF to Cloudinary
+        const uploadedFile = await uploadPDFToCloudinary(
             buffer,
             originalname
         );
 
-        // Return uploaded file details
+        // 2. Save document metadata in MongoDB
+        const document = await Document.create({
+            user: req.dbUser._id,
+            fileName: originalname,
+            fileSize: size,
+            mimeType: mimetype,
+            pageCount: 0,
+            storageProvider: "cloudinary",
+            storageUrl: uploadedFile.secure_url,
+            storageKey: uploadedFile.public_id,
+            status: "pending",
+        });
+
+        // 3. Return the saved document
         res.status(201).json({
             success: true,
-            message: "PDF uploaded to Cloudinary successfully.",
-            file: {
-                fileName: originalname,
-                fileSize: size,
-                mimeType: mimetype,
-                storageProvider: "cloudinary",
-                storageUrl: result.secure_url,
-                storageKey: result.public_id,
-                resourceType: result.resource_type,
-                format: result.format,
-            },
+            message: "Document uploaded and saved successfully.",
+            document,
         });
     } catch (error) {
         console.error("Document upload error:", error);
 
+        // 4. Remove the Clouinary file if MongoDB saving failed
+        if(uploadedFile?.public_id) {
+            try {
+                await cloudinary.uploader.destroy(
+                    uploadedFile.public_id,
+                    {
+                        resource_type: "raw",
+                        type: "authenticated",
+                    }
+                );
+
+                console.log("Orphaned Cloudinary file removed.");
+            } catch (cleanupError) {
+                console.error("Cloudinary cleanup failed:", cleanupError.message);
+            }
+        }
+        
         res.status(500).json({
             success: false,
             message: "Unable to upload document. Please try again.",
