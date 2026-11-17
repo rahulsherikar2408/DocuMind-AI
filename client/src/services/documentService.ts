@@ -40,4 +40,23 @@ export const getDocumentById = async(id: string): Promise<Document> => {
     const response = await api.get<DocumentResponse>(`/spi/documents/${id}`);
 
     return response.data.document;
-}
+};
+
+export const uploadDocument = async(file: File): Promise<Document> => {
+    const formData = new FormData();
+
+    // The field name must match upload.single("file")
+    formData.append("file", file);
+
+    const response = await api.post<{
+        success: boolean;
+        message: string;
+        document: Document;
+    }>("/api/documents/upload", formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
+
+    return response.data.document;
+};
