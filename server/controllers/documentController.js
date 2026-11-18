@@ -1,8 +1,11 @@
 import mongoose from "mongoose";
 
 import Document from "../models/Document.js";
-import uploadPDFToCloudinary from "../services/cloudinaryService.js";
+import DocumentChunk from "../models/DocumentChunk.js";
+
 import cloudinary from "../config/cloudinary.js";
+import uploadPDFToCloudinary from "../services/cloudinaryService.js";
+import processAndStorePDF from "../services/documentProcessingService.js";
 
 // Get all documents belonging to the logged-in user
 export const getDocuments = async(req, res) => {
@@ -67,41 +70,76 @@ export const getDocumentById = async(req, res) => {
 };
 
 export const uploadDocument = async(req, res) => {
-    let uploadedFile = null;
+    let uploadedFile;
+    let document;
 
     try {
         const { buffer, originalname, mimetype, size } = req.file;
 
-        // 1. Upload PDF to Cloudinary
-        const uploadedFile = await uploadPDFToCloudinary(
+        // Step 1: Upload PDF to Cloudinary
+        uploadedFile = await uploadPDFToCloudinary(
             buffer,
             originalname
         );
 
-        // 2. Save document metadata in MongoDB
-        const document = await Document.create({
+        // Step 2: Create document record.
+        document = await Document.create({
             user: req.dbUser._id,
             fileName: originalname,
             fileSize: size,
             mimeType: mimetype,
             pageCount: 0,
+            chunkCount: 0,
             storageProvider: "cloudinary",
             storageUrl: uploadedFile.secure_url,
             storageKey: uploadedFile.public_id,
-            status: "pending",
+            status: "processing",
         });
 
-        // 3. Return the saved document
+        // Step 3: Extract PDF text and save chunks.
+        try {
+            const result = await processAndStorePDF({
+                fileBuffer: buffer,
+                documentId: document._id,
+                userId: req.dbUser._id,
+            });
+
+            // Step 4: Update document processing information.
+            document.pageCount = result.pageCount;
+            document.chunkCount = result.chunkCount;
+            document.status = "completed";
+            document.precessedAt = new Date();
+            document.errorMessage = "";
+
+        } catch (processingError) {
+            console.error("PDF processing error:", processingError);
+
+            // Remove any chunks if processing was unsuccessful.
+            await DocumentChunk.deleteMany({
+                document: document._id,
+            });
+
+            document.status = "failed";
+            document.errorMessage = processingError.message || "PDF processing failed.";
+        }
+
+        // Step 5: Save updated document information.
+        await document.save();
+
         res.status(201).json({
             success: true,
-            message: "Document uploaded and saved successfully.",
+            message: document.status === "completed"
+                        ? "PDF uploaded and processed successfully."
+                        : "PDF uploaded, but text processing failed.",
             document,
         });
+
     } catch (error) {
         console.error("Document upload error:", error);
 
-        // 4. Remove the Clouinary file if MongoDB saving failed
-        if(uploadedFile?.public_id) {
+        // Clean up Cloudinary if the MongoDB document
+        // could not be created.
+        if(uploadedFile && !document) {
             try {
                 await cloudinary.uploader.destroy(
                     uploadedFile.public_id,
@@ -110,10 +148,8 @@ export const uploadDocument = async(req, res) => {
                         type: "authenticated",
                     }
                 );
-
-                console.log("Orphaned Cloudinary file removed.");
             } catch (cleanupError) {
-                console.error("Cloudinary cleanup failed:", cleanupError.message);
+                console.error("Cloudinary cleanup error:", cleanupError);
             }
         }
         
