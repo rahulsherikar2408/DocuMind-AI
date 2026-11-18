@@ -28,6 +28,11 @@ const documentSchema = new mongoose.Schema({
         default: 0,
         min: 0,
     },
+    chunkCount: {
+        type: Number,
+        default: 0,
+        min: 0,
+    },
     // File storage information
     storageProvider: {
         type: String,
