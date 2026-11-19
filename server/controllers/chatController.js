@@ -1,7 +1,11 @@
 import mongoose from "mongoose";
 
 import Chat from "../models/Chat.js";
+import Message from "../models/Message.js";
 import Document from "../models/Document.js";
+
+import generateRAGResponse from "../services/ragService.js";
+
 
 // POST /api/chats
 // Create a new chat.
@@ -127,6 +131,94 @@ export const getChatById = async(req, res) => {
         res.status(500).json({
             success: false,
             message: "Unable to retrieve chat.",
+        });
+    }
+};
+
+export const sendMessage = async(req, res) => {
+    try {
+        const { id } = req.params;
+        const { content } = req.body;
+
+        // 1. Validate chat ID
+        if(!mongoose.isValidObjectId(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid chat ID.",
+            });
+        }
+
+        // 2. Validate message content
+        if(typeof content !== "string" || !content.trim() || content.trim().length > 5000) {
+            return res.status(400).json({
+                success: false,
+                message: "Message must contain between 1 and 5000 characters.",
+            });
+        }
+
+        // 3. Find chat belonging to authenticated user
+        const chat = await Chat.findOne({
+            _id: id,
+            user: req.dbUser._id,
+        });
+
+        if(!chat) {
+            return res.status(404).json({
+                success: false,
+                message: "Chat not found.",
+            });
+        }
+
+        // 4. Save user message
+        const userMessage = await Message.create({
+            chat: chat._id,
+            role: "user",
+            content: content.trim(),
+        });
+
+        // 5. Generate AI response using RAG
+        const ragResponse = await generateRAGResponse({
+            question: content.trim(),
+            userId: req.dbUser._id.toString(),
+            documentId: chat.document ? chat.document.toString() : undefined,
+        });
+
+        // 6. Save assistant response
+        const assistantMessage = await Message.create({
+            chat: chat._id,
+            role: "assistant",
+            content: ragResponse.answer,
+            sources: ragResponse.sources.map((source) => ({
+                document: source.document,
+                pageNumber: source.pageNumber,
+                chunkIndex: source.chunkIndex,
+                score: source.score,
+            })),
+        });
+
+        // 7. Update chat information
+        chat.lastMessageAt = new Date();
+
+        if(chat.title === "New Chat") {
+            chat.title = content.trim().slice(0, 50);
+        }
+
+        await chat.save();
+
+        // 8. Return response
+        res.status(200).json({
+            success: true,
+            message: "Message sent successfully.",
+            userMessage,
+            assistantMessage,
+        });
+    } catch (error) {
+        console.error("Send message error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Unable to send message.",
+            error: error.message,
         });
     }
 };

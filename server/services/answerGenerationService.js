@@ -79,6 +79,7 @@ const generateDocumentAnswer = async ({ question, chunks }) => {
       answer,
       model: GENERATION_MODEL,
       sources: chunks.map((chunk) => ({
+        document: chunk.document,
         pageNumber: chunk.pageNumber,
         chunkIndex: chunk.chunkIndex,
         score: chunk.score,
