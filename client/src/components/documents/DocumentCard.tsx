@@ -49,7 +49,8 @@ function DocumentCard({ document, onDelete }: DocumentCardProps) {
 
         <div className="flex items-center gap-3">
           <Link
-            to={`/chat/${document.id}`}
+            to="/chat"
+            state={{ documentId: document.id }}
             title="Chat with document"
             className="text-slate-400 transition hover:text-indigo-600"
           >

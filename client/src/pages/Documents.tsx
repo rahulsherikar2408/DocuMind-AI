@@ -15,7 +15,7 @@ import DocumentUpload from "../components/documents/DocumentUpload";
 import { useDocuments } from "../hooks/useDocuments";
 import { useUploadDocument } from "../hooks/useUploadDocument";
 
-import type { Document } from "../services/documentService";
+
 import type { ViewMode } from "../components/documents/DocumentFilters";
 
 function Documents() {
@@ -28,9 +28,9 @@ function Documents() {
   const uploadMutation = useUploadDocument();
 
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<
-    "pending" | Document["status"]
-  >("pending");
+  const [status, setStatus] = useState<string>("all");
+
+
 
   const [view, setView] = useState<ViewMode>("grid");
   const [showUpload, setShowUpload] = useState(false);
@@ -43,7 +43,7 @@ function Documents() {
         .includes(search.toLowerCase());
 
       const matchesStatus =
-        status === "pending" || document.status === status;
+        status === "all" || document.status === status;
 
       return matchesSearch && matchesStatus;
     });
@@ -339,7 +339,8 @@ function Documents() {
                           <div className="flex items-center justify-end gap-4">
                             {document.status === "completed" && (
                               <Link
-                                to={`/chat/${document._id}`}
+                                to="/chat"
+                                state={{ documentId: document._id }}
                                 title="Chat with document"
                                 className="text-slate-400 hover:text-indigo-600"
                               >

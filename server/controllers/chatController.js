@@ -50,7 +50,7 @@ export const createChat = async(req, res) => {
         const chat = await Chat.create({
             user: req.dbUser._id,
             document: document?._id || null,
-            title: "New Chat",
+            title: document ? `Chat with ${document.fileName}` : "New Chat",
             lastMessageAt: new Date(),
         });
 
@@ -109,10 +109,38 @@ export const getChatById = async(req, res) => {
             });
         }
 
-        const chat = await Chat.findOne({
+        let chat = await Chat.findOne({
             _id: id,
             user: req.dbUser._id,
         }).populate("document", "fileName pageCount status");
+
+        // If not found by chat ID, check if this ID is a document ID
+        if (!chat) {
+            const document = await Document.findOne({
+                _id: id,
+                user: req.dbUser._id,
+            });
+
+            if (document) {
+                // Find existing chat for this document or create a new one
+                chat = await Chat.findOne({
+                    document: document._id,
+                    user: req.dbUser._id,
+                })
+                  .populate("document", "fileName pageCount status")
+                  .sort({ lastMessageAt: -1 });
+
+                if (!chat) {
+                    chat = await Chat.create({
+                        user: req.dbUser._id,
+                        document: document._id,
+                        title: `Chat with ${document.fileName}`,
+                        lastMessageAt: new Date(),
+                    });
+                    chat = await Chat.findById(chat._id).populate("document", "fileName pageCount status");
+                }
+            }
+        }
 
         if(!chat) {
             return res.status(404).json({
@@ -150,10 +178,18 @@ export const sendMessage = async(req, res) => {
         }
 
         // 2. Find chat belonging to authenticated user
-        const chat = await Chat.findOne({
+        let chat = await Chat.findOne({
             _id: id,
             user: req.dbUser._id,
         });
+
+        // If not found by chat ID, check if ID is a document ID
+        if (!chat) {
+            chat = await Chat.findOne({
+                document: id,
+                user: req.dbUser._id,
+            }).sort({ lastMessageAt: -1 });
+        }
 
         if(!chat) {
             return res.status(404).json({
@@ -229,10 +265,18 @@ export const getChatMessages = async (req, res) => {
     }
 
     // 2. Verify chat ownership
-    const chat = await Chat.findOne({
+    let chat = await Chat.findOne({
       _id: id,
       user: req.dbUser._id,
     });
+
+    // If not found by chat ID, check if ID is a document ID
+    if (!chat) {
+      chat = await Chat.findOne({
+        document: id,
+        user: req.dbUser._id,
+      }).sort({ lastMessageAt: -1 });
+    }
 
     if (!chat) {
       return res.status(404).json({

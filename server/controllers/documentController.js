@@ -12,7 +12,7 @@ export const getDocuments = async(req, res) => {
     try {
         const documents = await Document.find({
             user: req.dbUser._id,
-        }).sort({ createAt: -1 });
+        }).sort({ createdAt: -1 });
 
         res.status(200).json({
             success: true,
@@ -108,7 +108,7 @@ export const uploadDocument = async(req, res) => {
             document.pageCount = result.pageCount;
             document.chunkCount = result.chunkCount;
             document.status = "completed";
-            document.precessedAt = new Date();
+            document.processedAt = new Date();
             document.errorMessage = "";
 
         } catch (processingError) {

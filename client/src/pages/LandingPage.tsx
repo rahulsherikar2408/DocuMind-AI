@@ -18,7 +18,7 @@ const features = [
     icon: Upload,
     title: "Easy Document Upload",
     description:
-      "Upload your PDF documents and let DocuMind process and understand theri contents.",
+      "Upload your PDF documents and let DocuMind process and understand their contents.",
   },
   {
     icon: BrainCircuit,

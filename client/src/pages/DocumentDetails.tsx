@@ -1,133 +1,463 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, MessageSquare, FileText } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+
+import {
+    ArrowLeft,
+    FileText,
+    MessageSquare,
+    Sparkles,
+    Loader2,
+    Lightbulb,
+    RefreshCw,
+    Download,
+    ExternalLink,
+} from "lucide-react";
 
 import DashboardLayout from "../components/layout/DashboardLayout";
 import DocumentInfo from "../components/documents/DocumentInfo";
+
 import { useDocument } from "../hooks/useDocuments";
+import { useCreateChat } from "../hooks/useCreateChat";
+import { useGenerateSummary } from "../hooks/useGenerateSummary";
+import { useSuggestedQuestions } from "../hooks/useSuggestedQuestions";
+import type { Document as DisplayDocumentType } from "../types/document";
 
 function DocumentDetails() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+    const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
 
-  const { data: document, isLoading, error } = useDocument(id || "");
+    const [chatError, setChatError] = useState("");
 
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex min-h-[400px] flex-col items-center justify-center">
-          <div className="h-9 w-9 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+    // Fetch document details
+    const {
+        data: document,
+        isLoading,
+        error,
+    } = useDocument(id || "");
 
-          <p className="mt-4 text-sm text-slate-500">
-            Loading document details...
-          </p>
-        </div>
-      </DashboardLayout>
+    // Create document-specific chat
+    const {
+        mutateAsync: createChat,
+        isPending: isCreatingChat,
+    } = useCreateChat();
+
+    // Generate document summary
+    const {
+        mutateAsync: generateSummary,
+        data: summaryData,
+        isPending: isGenerating,
+        error: summaryError,
+    } = useGenerateSummary();
+
+    // Fetch AI-suggested questions
+    const {
+        data: suggestedQuestionsData,
+        isLoading: isLoadingQuestions,
+        error: questionsError,
+        refetch: refetchQuestions,
+        isFetching: isFetchingQuestions,
+    } = useSuggestedQuestions(
+        document?.status === "completed" ? document._id : ""
     );
-  }
 
-  if (error || !document) {
+    const isDocumentCompleted = document?.status === "completed";
+
+    // Create a chat associated with this document
+    const handleChatWithDocument = async () => {
+        if (!document?._id) return;
+
+        try {
+            setChatError("");
+
+            const newChat = await createChat({
+                documentId: document._id,
+            });
+
+            navigate(`/chat/${newChat._id}`);
+        } catch (error) {
+            console.error("Failed to create document chat:", error);
+
+            setChatError(
+                "Unable to start a chat with this document. Please try again."
+            );
+        }
+    };
+
+    // Generate document summary
+    const handleGenerateSummary = async () => {
+        if (!document?._id) return;
+
+        try {
+            await generateSummary(document._id);
+        } catch (error) {
+            console.error("Summary generation failed:", error);
+        }
+    };
+
+    // Start a document-specific chat with a suggested question
+    const handleSuggestedQuestion = async (question: string) => {
+        if (!document?._id) return;
+
+        try {
+            setChatError("");
+
+            const newChat = await createChat({
+                documentId: document._id,
+            });
+
+            navigate(`/chat/${newChat._id}`, {
+                state: {
+                    suggestedQuestion: question,
+                },
+            });
+        } catch (error) {
+            console.error(
+                "Failed to start suggested question chat:",
+                error
+            );
+
+            setChatError(
+                "Unable to start a chat. Please try again."
+            );
+        }
+    };
+
+    // Loading state
+    if (isLoading) {
+        return (
+            <DashboardLayout>
+                <div className="flex min-h-[60vh] items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    // Error or document not found
+    if (error || !document) {
+        return (
+            <DashboardLayout>
+                <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+                    <FileText className="mb-4 h-12 w-12 text-gray-400" />
+
+                    <h2 className="text-xl font-semibold text-gray-900">
+                        Document Not Found
+                    </h2>
+
+                    <p className="mt-2 text-sm text-gray-500">
+                        The document could not be found or you don't have
+                        permission to access it.
+                    </p>
+
+                    <Link
+                        to="/documents"
+                        className="mt-6 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back to Documents
+                    </Link>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    // Format document information for DocumentInfo component
+    const displayDocument: DisplayDocumentType = {
+        id: document._id,
+        name: document.fileName,
+        date: new Date(document.createdAt).toLocaleDateString(),
+        size: `${(document.fileSize / (1024 * 1024)).toFixed(2)} MB`,
+        pages: document.pageCount,
+        status: document.status,
+    };
+
     return (
-      <DashboardLayout>
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center">
-          <FileText size={40} className="mx-auto text-slate-300" />
-          <h2 className="mt-4 text-xl font-semibold text-slate-800">
-            Document not found
-          </h2>
-          <p className="mt-2 text-sm text-slate-500">
-            This document may have been removed or does not exist.
-          </p>
-          <Link
-            to="/documents"
-            className="mt-5 inline-flex text-sm font-medium text-indigo-600 hover:text-indigo-700"
-          >
-            Back to Documents
-          </Link>
-        </div>
-      </DashboardLayout>
-    );
-  }
+        <DashboardLayout>
+            <div className="mx-auto max-w-6xl space-y-6">
 
-  return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <Link
-              to="/documents"
-              className="mb-3 inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600"
-            >
-              <ArrowLeft size={16} />
-              Back to Documents
-            </Link>
+                {/* Back Navigation */}
+                <Link
+                    to="/documents"
+                    className="inline-flex items-center gap-2 text-sm text-gray-500 transition hover:text-indigo-600"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Documents
+                </Link>
 
-            <h1 className="text-2xl font-bold text-slate-800">
-              Documents Details
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              View information and explore your document.
-            </p>
-          </div>
+                {/* Page Header */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">
+                            Document Details
+                        </h1>
 
-          {document.status === "completed" && (
-            <button
-              onClick={() =>
-                navigate("/chat", {
-                  state: {
-                    documentId: document._id,
-                  },
-                })
-              }
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-indigo-700"
-            >
-              <MessageSquare size={18} />
-              Chat with Document
-            </button>
-          )}
-        </div>
+                        <p className="mt-1 text-sm text-gray-500">
+                            View information and interact with your document.
+                        </p>
+                    </div>
 
-        <DocumentInfo
-          document={{
-            id: document._id,
-            name: document.fileName,
-            date: new Date(document.createdAt).toLocaleDateString(),
-            size: `${(document.fileSize / (1024 * 1024)).toFixed(2)} MB`,
-            pages: document.pageCount,
-            status:
-              document.status === "completed"
-                ? "completed"
-                : document.status === "processing" ||
-                    document.status === "pending"
-                  ? "processing"
-                  : "failed",
-          }}
-        />
+                    {/* Action Buttons */}
+                    {isDocumentCompleted && (
+                        <div className="flex flex-wrap gap-3">
 
-        <div className="rounded-xl border border-slate-200 bg-white">
-          <div className="border-b border-slate-100 px-6 py-4">
-            <h2 className="font-semibold text-slate-800">Document Preview</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Preview of your uploaded PDF will appear here.
-            </p>
-          </div>
+                            {/* Generate Summary */}
+                            <button
+                                onClick={handleGenerateSummary}
+                                disabled={isGenerating}
+                                className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Generating Summary...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles className="h-4 w-4" />
+                                        Generate Summary
+                                    </>
+                                )}
+                            </button>
 
-          <div className="flex min-h-[400px] flex-col items-center justify-center bg-slate-50 p-8 text-center">
-            <div className="rounded-2xl bg-white p-6 shadow-sm">
-              <FileText size={48} className="text-red-500" />
+                            {/* Chat with Document */}
+                            <button
+                                onClick={handleChatWithDocument}
+                                disabled={isCreatingChat}
+                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {isCreatingChat ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Starting Chat...
+                                    </>
+                                ) : (
+                                    <>
+                                        <MessageSquare className="h-4 w-4" />
+                                        Chat with Document
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Chat Error */}
+                {chatError && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+                        {chatError}
+                    </div>
+                )}
+
+                {/* Document Information */}
+                <DocumentInfo document={displayDocument} />
+
+                {/* AI-Suggested Questions */}
+                {isDocumentCompleted && (
+                    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+
+                        {/* Section Header */}
+                        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
+                                    <Lightbulb className="h-5 w-5 text-amber-600" />
+                                </div>
+
+                                <div>
+                                    <h2 className="text-lg font-semibold text-gray-900">
+                                        AI-Suggested Questions
+                                    </h2>
+
+                                    <p className="text-sm text-gray-500">
+                                        Explore your document with these questions.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Refresh Questions */}
+                            <button
+                                onClick={() => refetchQuestions()}
+                                disabled={isFetchingQuestions}
+                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <RefreshCw
+                                    className={`h-4 w-4 ${
+                                        isFetchingQuestions
+                                            ? "animate-spin"
+                                            : ""
+                                    }`}
+                                />
+                                Refresh Questions
+                            </button>
+                        </div>
+
+                        {/* Loading State */}
+                        {isLoadingQuestions && (
+                            <div className="flex items-center gap-3 py-6 text-sm text-gray-500">
+                                <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
+                                Generating suggested questions...
+                            </div>
+                        )}
+
+                        {/* Error State */}
+                        {questionsError && !isLoadingQuestions && (
+                            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                                <p className="text-sm text-red-600">
+                                    Unable to generate suggested questions.
+                                </p>
+
+                                <button
+                                    onClick={() => refetchQuestions()}
+                                    className="mt-2 text-sm font-medium text-red-700 underline"
+                                >
+                                    Try Again
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Questions List */}
+                        {!isLoadingQuestions &&
+                            !questionsError &&
+                            suggestedQuestionsData?.questions && (
+                                <div className="space-y-3">
+                                    {suggestedQuestionsData.questions.map(
+                                        (question, index) => (
+                                            <button
+                                                key={`${index}-${question}`}
+                                                onClick={() =>
+                                                    handleSuggestedQuestion(
+                                                        question
+                                                    )
+                                                }
+                                                disabled={isCreatingChat}
+                                                className="group flex w-full items-start gap-3 rounded-lg border border-gray-200 p-4 text-left transition hover:border-indigo-300 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                            >
+                                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+                                                    {index + 1}
+                                                </span>
+
+                                                <span className="flex-1 text-sm leading-6 text-gray-700 group-hover:text-indigo-700">
+                                                    {question}
+                                                </span>
+
+                                                <MessageSquare className="mt-1 h-4 w-4 shrink-0 text-gray-400 group-hover:text-indigo-600" />
+                                            </button>
+                                        )
+                                    )}
+                                </div>
+                            )}
+
+                        {/* Empty State */}
+                        {!isLoadingQuestions &&
+                            !questionsError &&
+                            suggestedQuestionsData?.questions?.length === 0 && (
+                                <p className="py-5 text-center text-sm text-gray-500">
+                                    No suggested questions are available.
+                                </p>
+                            )}
+                    </div>
+                )}
+
+                {/* Summary Error */}
+                {summaryError && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+                        {summaryError instanceof Error
+                            ? summaryError.message
+                            : "Failed to generate document summary. Please try again."}
+                    </div>
+                )}
+
+                {/* Generated Summary */}
+                {summaryData?.summary && (
+                    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+
+                        <div className="mb-5 flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50">
+                                <Sparkles className="h-5 w-5 text-indigo-600" />
+                            </div>
+
+                            <div>
+                                <h2 className="text-lg font-semibold text-gray-900">
+                                    AI Document Summary
+                                </h2>
+
+                                <p className="text-sm text-gray-500">
+                                    Generated using Gemini AI
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="whitespace-pre-wrap text-sm leading-7 text-gray-700">
+                            {summaryData.summary}
+                        </div>
+
+                        <div className="mt-5 border-t border-gray-100 pt-4">
+                            <p className="text-xs text-gray-400">
+                                This summary is generated from the content of
+                                your uploaded document.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Document Preview / Download */}
+                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+
+                    <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+                        <div className="flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-indigo-600" />
+                            <h2 className="font-semibold text-gray-900">
+                                Document Preview & Access
+                            </h2>
+                        </div>
+
+                        {document.storageUrl && (
+                            <a
+                                href={document.storageUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+                            >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                Open in New Tab
+                            </a>
+                        )}
+                    </div>
+
+                    <div className="flex min-h-[220px] flex-col items-center justify-center bg-gray-50 p-8 text-center">
+                        <FileText className="mb-4 h-16 w-16 text-indigo-300" />
+
+                        <h3 className="text-base font-medium text-gray-800">
+                            {document.fileName}
+                        </h3>
+
+                        <p className="mt-1 text-xs text-gray-500">
+                            {displayDocument.size} · {document.pageCount} pages · Status: {document.status}
+                        </p>
+
+                        {document.storageUrl ? (
+                            <div className="mt-5 flex items-center gap-3">
+                                <a
+                                    href={document.storageUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Download / View PDF
+                                </a>
+                            </div>
+                        ) : (
+                            <p className="mt-3 text-sm text-gray-500">
+                                PDF file is stored securely.
+                            </p>
+                        )}
+                    </div>
+                </div>
+
             </div>
-
-            <h3 className="mt-5 font-semibold text-slate-700">
-              PDF Preview Unavailable
-            </h3>
-
-            <p className="mt-2 max-w-md text-sm, leading-6 text-slate-500">
-              The actual PDF preview will be available after we connect document
-              storage and PDF viewing functionality.
-            </p>
-          </div>
-        </div>
-      </div>
-    </DashboardLayout>
-  );
+        </DashboardLayout>
+    );
 }
 
 export default DocumentDetails;

@@ -33,7 +33,7 @@ function ChatMessage({ message }: ChatMessageProps) {
           {message.content}
         </p>
 
-        {isAssistant && message.sources?.length > 0 && (
+        {isAssistant && message.sources && message.sources.length > 0 && (
           <SourceReference sources={message.sources} />
         )}
 

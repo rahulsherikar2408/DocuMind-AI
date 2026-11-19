@@ -1,4 +1,5 @@
 import { NavLink, Link } from "react-router-dom";
+import { useClerk } from "@clerk/react";
 
 import {
   LayoutDashboard,
@@ -18,6 +19,7 @@ interface SidebarProps {
 }
 
 function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const { signOut } = useClerk();
   const navigation = [
     {
       name: "Dashboard",
@@ -152,7 +154,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
             </a>
           </div>
 
-          <button className="mt-4 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50">
+          <button type="button" onClick={() => signOut()} className="mt-4 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-red-600">
             <LogOut size={19} />
             Sign Out
           </button>

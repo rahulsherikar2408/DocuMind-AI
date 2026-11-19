@@ -8,13 +8,31 @@ import {
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
+import { useUser } from "@clerk/react";
 
 import DashboardLayout from "../components/layout/DashboardLayout";
 import StatCard from "../components/common/StatCard";
 import UploadCard from "../components/common/UploadCard";
 import DocumentTable from "../components/common/DocumentTable";
+import { useDocuments } from "../hooks/useDocuments";
+import { useChats } from "../hooks/useChats";
 
 function Dashboard() {
+  const { user } = useUser();
+  const { data: documents = [] } = useDocuments();
+  const { data: chats = [] } = useChats();
+
+  const userName = user?.firstName || "there";
+
+  const totalDocuments = documents.length;
+  const processedDocuments = documents.filter(
+    (doc) => doc.status === "completed"
+  ).length;
+  const processingDocuments = documents.filter(
+    (doc) => doc.status === "processing" || doc.status === "pending"
+  ).length;
+  const conversationCount = chats.length;
+
   return (
     <DashboardLayout>
       {/* Welcome Section */}
@@ -26,7 +44,7 @@ function Dashboard() {
           </div>
 
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Welcome back, Rahul!
+            Welcome back, {userName}!
           </h1>
 
           <p className="mt-2 text-sm text-slate-500">
@@ -45,10 +63,10 @@ function Dashboard() {
       </section>
 
       {/* Statistics */}
-      <section className="mb-8 grid gap-5 sm:grid-cols-2 xl:grid-col-4">
+      <section className="mb-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="Total Documents"
-          value={24}
+          value={totalDocuments}
           description="Documents in your workspace"
           icon={Files}
           color="text-indigo-600"
@@ -57,7 +75,7 @@ function Dashboard() {
 
         <StatCard
           title="Processed"
-          value={20}
+          value={processedDocuments}
           description="Successfully processed documents"
           icon={CheckCircle2}
           color="text-green-600"
@@ -66,7 +84,7 @@ function Dashboard() {
 
         <StatCard
           title="Processing"
-          value={3}
+          value={processingDocuments}
           description="Documents being processed"
           icon={Clock}
           color="text-amber-600"
@@ -75,7 +93,7 @@ function Dashboard() {
 
         <StatCard
           title="Conversations"
-          value={56}
+          value={conversationCount}
           description="AI conversations created"
           icon={MessageSquare}
           color="text-purple-600"

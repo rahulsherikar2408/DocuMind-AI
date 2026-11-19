@@ -15,6 +15,8 @@ import connectDB from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
+import summaryRoutes from "./routes/summaryRoutes.js";
+import suggestedQuestionsRoutes from "./routes/suggestedQuestionsRoutes.js";
 
 const app = express();
 
@@ -48,6 +50,8 @@ app.get("/api/health", (req, res) => {
 app.use("/api/users", userRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/chats", chatRoutes);
+app.use("/api/summaries", summaryRoutes);
+app.use("/api/suggested-questions", suggestedQuestionsRoutes);
 
 // Root route
 app.get("/", (req, res) => {
@@ -95,9 +99,9 @@ app.use((error, req, res, next) => {
 
   console.error("Unhandled server error:", error);
 
-  res.status(500).json({
+  res.status(error.statusCode || error.status || 500).json({
     success: false,
-    message: "Internal server error.",
+    message: error.message || "Internal server error.",
   });
 });
 

@@ -14,7 +14,7 @@ const documentChunkSchema = new mongoose.Schema(
     },
     chunkIndex: {
       type: Number,
-      requred: true,
+      required: true,
       min: 0,
     },
     pageNumber: {

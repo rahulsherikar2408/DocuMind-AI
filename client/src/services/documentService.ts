@@ -37,7 +37,7 @@ export const getDocuments = async(): Promise<Document[]> => {
 };
 
 export const getDocumentById = async(id: string): Promise<Document> => {
-    const response = await api.get<DocumentResponse>(`/spi/documents/${id}`);
+    const response = await api.get<DocumentResponse>(`/api/documents/${id}`);
 
     return response.data.document;
 };

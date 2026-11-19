@@ -140,7 +140,8 @@ function DocumentTable() {
                     <div className="flex items-center gap-2">
                       {document.status === "completed" && (
                         <Link
-                          to={`/chat/${document._id}`}
+                          to="/chat"
+                          state={{ documentId: document._id }}
                           className="rounded-lg p-2 text-slate-500 transition hover:bg-indigo-50 hover:text-indigo-600"
                           title="Chat with document"
                         >
