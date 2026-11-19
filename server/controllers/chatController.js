@@ -28,6 +28,7 @@ export const createChat = async(req, res) => {
             document = await Document.findOne({
                 _id: documentId,
                 user: req.dbUser._id,
+                status: "completed",
             });
 
             if(!document) {

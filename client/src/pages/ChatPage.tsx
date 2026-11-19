@@ -4,9 +4,11 @@ import { MessageSquare, Sparkles } from "lucide-react";
 
 import DashboardLayout from "../components/layout/DashboardLayout";
 import ChatHeader from "../components/chat/ChatHeader";
+import ChatMessage from "../components/chat/ChatMessage";
 
 import { useCreateChat } from "../hooks/useCreateChat";
 import { useChat } from "../hooks/useChat";
+import { useChatMessages } from "../hooks/useChatMessages";
 
 function ChatPage() {
   const { id } = useParams<{ id: string }>();
@@ -14,25 +16,26 @@ function ChatPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Optional document ID passed through navigation state.
-  const documentId = (
-    location.state as { documentId?: string } | null
-  )?.documentId;
+  const documentId = (location.state as { documentId?: string } | null)
+    ?.documentId;
 
   const creationStarted = useRef(false);
-
   const [creationError, setCreationError] = useState(false);
 
-  const {
-    mutateAsync: createChat,
-    isPending: isCreatingChat,
-  } = useCreateChat();
+  const { mutateAsync: createChat, isPending: isCreatingChat } =
+    useCreateChat();
 
   const {
     data: chat,
     isPending: isLoadingChat,
     isError: isChatError,
   } = useChat(id);
+
+  const {
+    data: messages = [],
+    isPending: isLoadingMessages,
+    isError: isMessagesError,
+  } = useChatMessages(id);
 
   // Create a new chat.
   const startNewChat = useCallback(async () => {
@@ -42,9 +45,11 @@ function ChatPage() {
     setCreationError(false);
 
     try {
-      const newChat = await createChat(
-        documentId ? { documentId } : {}
-      );
+      console.log("Document ID received:", documentId);
+
+      const newChat = await createChat(documentId ? { documentId } : {});
+
+      console.log("Created chat:", newChat);
 
       navigate(`/chat/${newChat._id}`, {
         replace: true,
@@ -73,7 +78,6 @@ function ChatPage() {
       <DashboardLayout>
         <div className="flex min-h-[65vh] items-center justify-center">
           <div className="max-w-md text-center">
-
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50">
               <Sparkles size={30} className="text-indigo-600" />
             </div>
@@ -85,8 +89,8 @@ function ChatPage() {
                 </h2>
 
                 <p className="mt-2 text-sm text-slate-500">
-                  Something went wrong while creating your conversation.
-                  Please try again.
+                  Something went wrong while creating your conversation. Please
+                  try again.
                 </p>
 
                 <button
@@ -110,7 +114,6 @@ function ChatPage() {
                 <div className="mx-auto mt-5 h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
               </>
             )}
-
           </div>
         </div>
       </DashboardLayout>
@@ -159,7 +162,6 @@ function ChatPage() {
     );
   }
 
-  // A chat can be associated with a document or all documents.
   const document =
     typeof chat.document === "object" && chat.document !== null
       ? chat.document
@@ -170,33 +172,52 @@ function ChatPage() {
   return (
     <DashboardLayout>
       <div className="flex h-[calc(100vh-145px)] min-h-[550px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-
         <ChatHeader documentName={documentName} />
 
-        <div className="flex flex-1 items-center justify-center p-6">
-          <div className="max-w-lg text-center">
-
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50">
-              <Sparkles size={30} className="text-indigo-600" />
+        <div className="flex-1 space-y-6 overflow-y-auto p-4 sm:p-6">
+          {isLoadingMessages ? (
+            <div className="flex h-full items-center justify-center">
+              <div className="text-center">
+                <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+                <p className="mt-3 text-sm text-slate-500">
+                  Loading messages...
+                </p>
+              </div>
             </div>
+          ) : isMessagesError ? (
+            <div className="rounded-lg border border-red-100 bg-red-50 p-4 text-center">
+              <p className="text-sm text-red-600">
+                Unable to load conversation messages.
+              </p>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50">
+                <Sparkles size={26} className="text-indigo-600" />
+              </div>
 
-            <h2 className="mt-5 text-xl font-semibold text-slate-800">
-              Your conversation is ready!
-            </h2>
+              <h2 className="mt-4 text-lg font-semibold text-slate-800">
+                Start your conversation
+              </h2>
 
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              {document
-                ? `You can now ask questions about ${document.fileName}.`
-                : "Ask questions across your uploaded documents and let DocuMind AI find the relevant information."}
-            </p>
-
-            <p className="mt-4 text-xs text-slate-400">
-              Chat ID: {chat._id}
-            </p>
-
-          </div>
+              <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                {document
+                  ? `Ask questions about ${document.fileName}.`
+                  : "Ask questions about your uploaded documents and explore their contents."}
+              </p>
+            </div>
+          ) : (
+            messages.map((message) => (
+              <ChatMessage key={message._id} message={message} />
+            ))
+          )}
         </div>
 
+        <div className="border-t border-slate-200 bg-white p-4 sm:px-6">
+          <p className="text-center text-xs text-slate-400">
+            Message input will be connected to the backend in the next step.
+          </p>
+        </div>
       </div>
     </DashboardLayout>
   );

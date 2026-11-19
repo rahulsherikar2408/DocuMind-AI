@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, MessageSquare, FileText } from "lucide-react";
 
 import DashboardLayout from "../components/layout/DashboardLayout";
@@ -7,6 +7,7 @@ import { useDocument } from "../hooks/useDocuments";
 
 function DocumentDetails() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const { data: document, isLoading, error } = useDocument(id || "");
 
@@ -68,13 +69,19 @@ function DocumentDetails() {
           </div>
 
           {document.status === "completed" && (
-            <Link
-              to={`/chat/${document._id}`}
+            <button
+              onClick={() =>
+                navigate("/chat", {
+                  state: {
+                    documentId: document._id,
+                  },
+                })
+              }
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-indigo-700"
             >
               <MessageSquare size={18} />
               Chat with Document
-            </Link>
+            </button>
           )}
         </div>
 
@@ -112,7 +119,7 @@ function DocumentDetails() {
               PDF Preview Unavailable
             </h3>
 
-            <p className="mt-2 max-w-md text-s, leading-6 text-slate-500">
+            <p className="mt-2 max-w-md text-sm, leading-6 text-slate-500">
               The actual PDF preview will be available after we connect document
               storage and PDF viewing functionality.
             </p>
