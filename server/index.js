@@ -14,6 +14,7 @@ import connectDB from "./config/db.js";
 
 import userRoutes from "./routes/userRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.get("/api/health", (req, res) => {
 // API routes
 app.use("/api/users", userRoutes);
 app.use("/api/documents", documentRoutes);
+app.use("/api/chats", chatRoutes);
 
 // Root route
 app.get("/", (req, res) => {
