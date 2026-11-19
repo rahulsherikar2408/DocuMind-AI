@@ -148,15 +148,7 @@ export const sendMessage = async(req, res) => {
             });
         }
 
-        // 2. Validate message content
-        if(typeof content !== "string" || !content.trim() || content.trim().length > 5000) {
-            return res.status(400).json({
-                success: false,
-                message: "Message must contain between 1 and 5000 characters.",
-            });
-        }
-
-        // 3. Find chat belonging to authenticated user
+        // 2. Find chat belonging to authenticated user
         const chat = await Chat.findOne({
             _id: id,
             user: req.dbUser._id,
@@ -169,21 +161,21 @@ export const sendMessage = async(req, res) => {
             });
         }
 
-        // 4. Save user message
+        // 3. Save user message
         const userMessage = await Message.create({
             chat: chat._id,
             role: "user",
             content: content.trim(),
         });
 
-        // 5. Generate AI response using RAG
+        // 4. Generate AI response using RAG
         const ragResponse = await generateRAGResponse({
             question: content.trim(),
             userId: req.dbUser._id.toString(),
             documentId: chat.document ? chat.document.toString() : undefined,
         });
 
-        // 6. Save assistant response
+        // 5. Save assistant response
         const assistantMessage = await Message.create({
             chat: chat._id,
             role: "assistant",
@@ -196,7 +188,7 @@ export const sendMessage = async(req, res) => {
             })),
         });
 
-        // 7. Update chat information
+        // 6. Update chat information
         chat.lastMessageAt = new Date();
 
         if(chat.title === "New Chat") {
@@ -205,7 +197,7 @@ export const sendMessage = async(req, res) => {
 
         await chat.save();
 
-        // 8. Return response
+        // 7. Return response
         res.status(200).json({
             success: true,
             message: "Message sent successfully.",
@@ -217,8 +209,56 @@ export const sendMessage = async(req, res) => {
 
         res.status(500).json({
             success: false,
-            message: "Unable to send message.",
-            error: error.message,
+            message: "Unable to generate an AI response. Please try again.",
         });
     }
+};
+
+
+export const getChatMessages = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Validate chat ID
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid chat ID.",
+      });
+    }
+
+    // 2. Verify chat ownership
+    const chat = await Chat.findOne({
+      _id: id,
+      user: req.dbUser._id,
+    });
+
+    if (!chat) {
+      return res.status(404).json({
+        success: false,
+        message: "Chat not found.",
+      });
+    }
+
+    // 3. Retrieve messages
+    const messages = await Message.find({
+      chat: chat._id,
+    })
+      .populate("sources.document", "fileName pageCount")
+      .sort({ createdAt: 1 });
+
+    // 4. Return messages
+    res.status(200).json({
+      success: true,
+      count: messages.length,
+      messages,
+    });
+  } catch (error) {
+    console.error("Get chat messages error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to retrieve chat messages.",
+    });
+  }
 };
