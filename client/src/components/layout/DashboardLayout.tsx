@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Menu, Search, Bell, ChevronDown } from "lucide-react";
+import { Menu, Bell, ChevronDown } from "lucide-react";
 
 import Sidebar from "./Sidebar";
 import { useCurrentUser } from "../../hooks/useUser";
@@ -38,21 +38,6 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
             <h1 className="text-lg font-bold text-slate-800 sm:hidden">
               Dashboard
             </h1>
-          </div>
-
-          {/* Search */}
-          <div className="hidden w-full max-w-sm items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 md:flex">
-            <Search size={18} className="text-slate-400" />
-
-            <input
-              type="text"
-              placeholder="Search documents..."
-              className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
-            />
-
-            <span className="rounded border border-slate-200 bg-white px-2 py-1 text-xs text-slate-400">
-              Ctrl K
-            </span>
           </div>
 
           {/* Profile */}

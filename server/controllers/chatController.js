@@ -6,12 +6,59 @@ import Document from "../models/Document.js";
 
 import generateRAGResponse from "../services/ragService.js";
 
+const escapeRegex = (string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+export const generateUniqueChatTitle = async (userId, baseTitle, excludeChatId = null) => {
+    const trimmedTitle = (baseTitle || "New Chat").trim();
+    const escaped = escapeRegex(trimmedTitle);
+    const regex = new RegExp(`^${escaped}(?: \\((\\d+)\\))?$`);
+
+    const query = {
+        user: userId,
+        title: { $regex: regex },
+    };
+
+    if (excludeChatId) {
+        query._id = { $ne: excludeChatId };
+    }
+
+    const matchingChats = await Chat.find(query).select("title").lean();
+
+    const hasExactBase = matchingChats.some((c) => c.title === trimmedTitle);
+
+    if (!hasExactBase) {
+        return trimmedTitle;
+    }
+
+    const suffixRegex = new RegExp(`^${escaped} \\((\\d+)\\)$`);
+    const suffixSet = new Set();
+
+    for (const c of matchingChats) {
+        const match = c.title.match(suffixRegex);
+        if (match && match[1]) {
+            const num = parseInt(match[1], 10);
+            if (!isNaN(num)) {
+                suffixSet.add(num);
+            }
+        }
+    }
+
+    let suffix = 1;
+    while (suffixSet.has(suffix)) {
+        suffix++;
+    }
+
+    return `${trimmedTitle} (${suffix})`;
+};
+
 
 // POST /api/chats
 // Create a new chat.
 export const createChat = async(req, res) => {
     try {
-        const { documentId } = req.body;
+        const { documentId, title: customTitle } = req.body;
 
         let document = null;
 
@@ -46,11 +93,14 @@ export const createChat = async(req, res) => {
             }
         }
 
+        const baseTitle = customTitle?.trim() || (document ? `Chat with ${document.fileName}` : "New Chat");
+        const title = await generateUniqueChatTitle(req.dbUser._id, baseTitle);
+
         // Create the chat.
         const chat = await Chat.create({
             user: req.dbUser._id,
             document: document?._id || null,
-            title: document ? `Chat with ${document.fileName}` : "New Chat",
+            title,
             lastMessageAt: new Date(),
         });
 
@@ -131,10 +181,12 @@ export const getChatById = async(req, res) => {
                   .sort({ lastMessageAt: -1 });
 
                 if (!chat) {
+                    const baseTitle = `Chat with ${document.fileName}`;
+                    const title = await generateUniqueChatTitle(req.dbUser._id, baseTitle);
                     chat = await Chat.create({
                         user: req.dbUser._id,
                         document: document._id,
-                        title: `Chat with ${document.fileName}`,
+                        title,
                         lastMessageAt: new Date(),
                     });
                     chat = await Chat.findById(chat._id).populate("document", "fileName pageCount status");
@@ -228,8 +280,9 @@ export const sendMessage = async(req, res) => {
         // 6. Update chat information
         chat.lastMessageAt = new Date();
 
-        if(chat.title === "New Chat") {
-            chat.title = content.trim().slice(0, 50);
+        if (chat.title === "New Chat" || /^New Chat( \(\d+\))?$/.test(chat.title)) {
+            const candidateTitle = content.trim().slice(0, 50);
+            chat.title = await generateUniqueChatTitle(req.dbUser._id, candidateTitle, chat._id);
         }
 
         await chat.save();
@@ -304,6 +357,51 @@ export const getChatMessages = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Unable to retrieve chat messages.",
+    });
+  }
+};
+
+// DELETE /api/chats/:id
+// Delete a chat and its messages belonging to the logged-in user.
+export const deleteChat = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid chat ID.",
+      });
+    }
+
+    const chat = await Chat.findOne({
+      _id: id,
+      user: req.dbUser._id,
+    });
+
+    if (!chat) {
+      return res.status(404).json({
+        success: false,
+        message: "Chat not found.",
+      });
+    }
+
+    // Delete all messages associated with this chat
+    await Message.deleteMany({ chat: chat._id });
+
+    // Delete the chat itself
+    await Chat.findByIdAndDelete(chat._id);
+
+    res.status(200).json({
+      success: true,
+      message: "Chat deleted successfully.",
+    });
+  } catch (error) {
+    console.error("Delete chat error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to delete chat.",
     });
   }
 };

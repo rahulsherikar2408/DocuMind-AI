@@ -10,6 +10,7 @@ import type {
   SendMessagePayload,
   SendMessageResponse,
   GetChatMessagesResponse,
+  DeleteChatResponse,
 } from "../types/chat";
 
 // Create a new chat
@@ -45,4 +46,11 @@ export const getChatMessages = async(chatId: string): Promise<ChatMessage[]> => 
     const { data } = await api.get<GetChatMessagesResponse>(`/api/chats/${chatId}/messages`);
 
     return data.messages;
+};
+
+// Delete a chat
+export const deleteChat = async(chatId: string): Promise<DeleteChatResponse> => {
+    const { data } = await api.delete<DeleteChatResponse>(`/api/chats/${chatId}`);
+
+    return data;
 };

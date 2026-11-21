@@ -35,12 +35,18 @@ export interface ChatMessage {
 
 export interface CreateChatPayload {
   documentId?: string;
+  title?: string;
 }
 
 export interface CreateChatResponse {
   success: boolean;
   message: string;
   chat: Chat;
+}
+
+export interface DeleteChatResponse {
+  success: boolean;
+  message: string;
 }
 
 export interface GetChatsResponse {
