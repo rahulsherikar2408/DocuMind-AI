@@ -7,6 +7,44 @@ import cloudinary from "../config/cloudinary.js";
 import uploadPDFToCloudinary from "../services/cloudinaryService.js";
 import processAndStorePDF from "../services/documentProcessingService.js";
 
+export const getDocumentDownloadUrl = (doc) => {
+    if (!doc) return "";
+
+    if (doc.storageProvider === "cloudinary" || !doc.storageProvider) {
+        let publicId = doc.storageKey;
+        let cldType = "authenticated";
+
+        if (doc.storageUrl) {
+            if (doc.storageUrl.includes("/raw/upload/")) {
+                cldType = "upload";
+            }
+            if (!publicId) {
+                const match = doc.storageUrl.match(/\/raw\/(?:authenticated|upload)\/(?:v\d+\/)?(.+?)(?:\?.*)?$/);
+                if (match) {
+                    publicId = match[1];
+                }
+            }
+        }
+
+        if (publicId) {
+            try {
+                return cloudinary.utils.private_download_url(
+                    publicId,
+                    "",
+                    {
+                        resource_type: "raw",
+                        type: cldType,
+                    }
+                );
+            } catch (err) {
+                console.error("Error generating Cloudinary download URL:", err);
+            }
+        }
+    }
+
+    return doc.storageUrl || "";
+};
+
 // Get all documents belonging to the logged-in user
 export const getDocuments = async(req, res) => {
     try {
@@ -14,10 +52,16 @@ export const getDocuments = async(req, res) => {
             user: req.dbUser._id,
         }).sort({ createdAt: -1 });
 
+        const formattedDocuments = documents.map((doc) => {
+            const docObj = doc.toObject();
+            docObj.storageUrl = getDocumentDownloadUrl(docObj);
+            return docObj;
+        });
+
         res.status(200).json({
             success: true,
-            count: documents.length,
-            documents,
+            count: formattedDocuments.length,
+            documents: formattedDocuments,
         });
     } catch (error) {
         console.error("Get documents error:", error);
@@ -55,9 +99,12 @@ export const getDocumentById = async(req, res) => {
             });
         }
 
+        const documentObj = document.toObject();
+        documentObj.storageUrl = getDocumentDownloadUrl(documentObj);
+
         res.status(200).json({
             success: true,
-            document,
+            document: documentObj,
         });
     } catch (error) {
         console.error("Get document error:", error);
@@ -126,12 +173,15 @@ export const uploadDocument = async(req, res) => {
         // Step 5: Save updated document information.
         await document.save();
 
+        const documentResponse = document.toObject();
+        documentResponse.storageUrl = getDocumentDownloadUrl(documentResponse);
+
         res.status(201).json({
             success: true,
             message: document.status === "completed"
                         ? "PDF uploaded and processed successfully."
                         : "PDF uploaded, but text processing failed.",
-            document,
+            document: documentResponse,
         });
 
     } catch (error) {
