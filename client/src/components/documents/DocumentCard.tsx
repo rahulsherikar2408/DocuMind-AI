@@ -9,17 +9,17 @@ interface DocumentCardProps {
 
 function DocumentCard({ document, onDelete }: DocumentCardProps) {
   const statusStyles = {
-    completed: "bg-emerald-50 text-emerald-700",
-    processing: "bg-amber-50 text-amber-700",
-    pending: "bg-amber-50 text-amber-700",
-    failed: "bg-red-50 text-red-700",
+    completed: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400",
+    processing: "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400",
+    pending: "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400",
+    failed: "bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-400",
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:shadow-md">
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs transition hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 dark:hover:shadow-none">
       <div className="flex items-start justify-between">
-        <div className="rounded-xl bg-red-50 p-3">
-          <FileText size={25} className="text-red-500" />
+        <div className="rounded-xl bg-red-50 p-3 dark:bg-red-950/60">
+          <FileText size={25} className="text-red-500 dark:text-red-400" />
         </div>
 
         <span
@@ -29,20 +29,20 @@ function DocumentCard({ document, onDelete }: DocumentCardProps) {
         </span>
       </div>
 
-      <h3 className="mt-5 truncate font-semibold text-slate-800">
+      <h3 className="mt-5 truncate font-semibold text-slate-800 dark:text-slate-100">
         {document.name}
       </h3>
 
-      <p className="mt-2 text-sm text-slate-500">
+      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
         {document.size} · {document.pages} pages
       </p>
 
-      <p className="mt-1 text-xs text-slate-400">Uploaded {document.date}</p>
+      <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Uploaded {document.date}</p>
 
-      <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+      <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
         <Link
           to={`/documents/${document.id}`}
-          className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+          className="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
         >
           View details
         </Link>
@@ -52,7 +52,7 @@ function DocumentCard({ document, onDelete }: DocumentCardProps) {
             to="/chat"
             state={{ documentId: document.id }}
             title="Chat with document"
-            className="text-slate-400 transition hover:text-indigo-600"
+            className="text-slate-400 transition hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400"
           >
             <MessageSquare size={18} />
           </Link>
@@ -61,7 +61,7 @@ function DocumentCard({ document, onDelete }: DocumentCardProps) {
             type="button"
             title="Delete document"
             onClick={() => onDelete(document.id)}
-            className="text-slate-400 transition hover:text-red-600"
+            className="text-slate-400 transition hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400 cursor-pointer"
           >
             <Trash2 size={18} />
           </button>

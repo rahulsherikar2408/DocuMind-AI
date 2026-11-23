@@ -1,6 +1,8 @@
-
 import { useAuth } from "@clerk/react";
 import { useState } from "react";
+import ThemeToggle from "../components/common/ThemeToggle";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 function AuthTestPage() {
   const { getToken } = useAuth();
@@ -50,9 +52,20 @@ function AuthTestPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="min-h-screen bg-slate-50 p-8 text-slate-900 transition-colors duration-200 dark:bg-slate-950 dark:text-slate-100">
       <div className="mx-auto max-w-2xl space-y-5">
-        <h1 className="text-2xl font-bold text-slate-900">
+        <div className="flex items-center justify-between">
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
+          >
+            <ArrowLeft size={16} />
+            Back to Dashboard
+          </Link>
+          <ThemeToggle />
+        </div>
+
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
           DocuMind AI API Testing
         </h1>
 
@@ -60,7 +73,7 @@ function AuthTestPage() {
           <button
             onClick={() => testAPI("/api/users/me")}
             disabled={loading}
-            className="rounded-lg bg-indigo-600 px-5 py-3 text-white disabled:opacity-50"
+            className="rounded-lg bg-indigo-600 px-5 py-3 font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
           >
             Test User API
           </button>
@@ -68,16 +81,16 @@ function AuthTestPage() {
           <button
             onClick={() => testAPI("/api/documents")}
             disabled={loading}
-            className="rounded-lg bg-emerald-600 px-5 py-3 text-white disabled:opacity-50"
+            className="rounded-lg bg-emerald-600 px-5 py-3 font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
           >
             Test Documents API
           </button>
         </div>
 
-        {loading && <p>Testing API...</p>}
+        {loading && <p className="text-sm text-slate-500 dark:text-slate-400">Testing API...</p>}
 
         {result && (
-          <pre className="overflow-auto rounded-lg bg-slate-900 p-5 text-sm text-green-400">
+          <pre className="overflow-auto rounded-lg border border-slate-200 bg-slate-900 p-5 text-sm text-green-400 dark:border-slate-800">
             {result}
           </pre>
         )}

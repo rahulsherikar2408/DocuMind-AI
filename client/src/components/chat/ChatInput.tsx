@@ -27,7 +27,7 @@ function ChatInput({ onSend, disabled = false }: ChatInputProps) {
   };
 
   return (
-    <div className="flex items-end gap-3 rounded-xl border border-slate-200 bg-white p-2 shadow-sm focus-within:border-indigo-300">
+    <div className="flex items-end gap-3 rounded-xl border border-slate-200 bg-white p-2 shadow-xs transition focus-within:border-indigo-400 dark:border-slate-800 dark:bg-slate-900 dark:focus-within:border-indigo-500">
       <textarea
         value={message}
         onChange={(event) => setMessage(event.target.value)}
@@ -35,14 +35,14 @@ function ChatInput({ onSend, disabled = false }: ChatInputProps) {
         placeholder="Ask a question about your document..."
         rows={1}
         disabled={disabled}
-        className="max-h-32 min-h-10 flex-1 resize-y bg-transparent px-2 py-2 text text-slate-700 outline-none placeholder:text-slate-500 disabled:opacity-50"
+        className="max-h-32 min-h-10 flex-1 resize-y bg-transparent px-2 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 disabled:opacity-50 dark:text-slate-100 dark:placeholder:text-slate-500"
       />
       <button
         type="button"
         onClick={handleSend}
         disabled={!message.trim() || disabled}
         aria-label="Send message"
-        className="rounded-lg bg-indigo-600 p-3 text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-lg bg-indigo-600 p-3 text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
       >
         <Send size={18} />
       </button>

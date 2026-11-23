@@ -8,6 +8,7 @@ import './index.css'
 import App from './App.tsx'
 
 import ApiProvider from "./components/providers/ApiProvider";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 // eslint-disable-next-line react-refresh/only-export-components
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -23,7 +24,9 @@ createRoot(document.getElementById('root')!).render(
     <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
       <QueryClientProvider client={queryClient}>
         <ApiProvider>
-          <App />
+          <ThemeProvider>
+            <App />
+          </ThemeProvider>
         </ApiProvider>
       </QueryClientProvider>
     </ClerkProvider>

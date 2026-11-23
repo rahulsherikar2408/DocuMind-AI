@@ -38,23 +38,23 @@ function Dashboard() {
       {/* Welcome Section */}
       <section className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
         <div>
-          <div className="flex items-center gap-2 text-sm font-medium text-indigo-600">
+          <div className="flex items-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400">
             <Sparkles size={16} />
             Your AI Workspace
           </div>
 
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
             Welcome back, {userName}!
           </h1>
 
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
             Manage your documents and continue exploring with AI.
           </p>
         </div>
 
         <Link
           to="/documents"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:bg-indigo-700"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:bg-indigo-700 dark:shadow-none"
         >
           <Files size={18} />
           Manage Documents
@@ -69,8 +69,8 @@ function Dashboard() {
           value={totalDocuments}
           description="Documents in your workspace"
           icon={Files}
-          color="text-indigo-600"
-          bgColor="bg-indigo-50"
+          color="text-indigo-600 dark:text-indigo-400"
+          bgColor="bg-indigo-50 dark:bg-indigo-950/60"
         />
 
         <StatCard
@@ -78,8 +78,8 @@ function Dashboard() {
           value={processedDocuments}
           description="Successfully processed documents"
           icon={CheckCircle2}
-          color="text-green-600"
-          bgColor="bg-green-50"
+          color="text-green-600 dark:text-green-400"
+          bgColor="bg-green-50 dark:bg-green-950/60"
         />
 
         <StatCard
@@ -87,8 +87,8 @@ function Dashboard() {
           value={processingDocuments}
           description="Documents being processed"
           icon={Clock}
-          color="text-amber-600"
-          bgColor="bg-amber-50"
+          color="text-amber-600 dark:text-amber-400"
+          bgColor="bg-amber-50 dark:bg-amber-950/60"
         />
 
         <StatCard
@@ -96,8 +96,8 @@ function Dashboard() {
           value={conversationCount}
           description="AI conversations created"
           icon={MessageSquare}
-          color="text-purple-600"
-          bgColor="bg-purple-50"
+          color="text-purple-600 dark:text-purple-400"
+          bgColor="bg-purple-50 dark:bg-purple-950/60"
         />
       </section>
 
@@ -107,7 +107,7 @@ function Dashboard() {
           <UploadCard />
         </div>
 
-        <div className="flex flex-col justify-between rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-7 text-white lg:col-span-2">
+        <div className="flex flex-col justify-between rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-7 text-white shadow-sm dark:shadow-none lg:col-span-2">
           <div>
             <div className="inline-flex rounded-2xl bg-white/15 p-3">
               <Sparkles size={25} />
