@@ -74,13 +74,14 @@ export const getDocuments = async (req, res) => {
   try {
     const documents = await Document.find({
       user: req.dbUser._id,
-    }).sort({ createdAt: -1 });
+    })
+      .sort({ createdAt: -1 })
+      .lean();
 
-    const formattedDocuments = documents.map((doc) => {
-      const docObj = doc.toObject();
-      docObj.storageUrl = getDocumentDownloadUrl(docObj);
-      return docObj;
-    });
+    const formattedDocuments = documents.map((doc) => ({
+      ...doc,
+      storageUrl: getDocumentDownloadUrl(doc),
+    }));
 
     res.status(200).json({
       success: true,

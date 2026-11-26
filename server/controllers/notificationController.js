@@ -7,16 +7,18 @@ export const getNotifications = async (req, res) => {
   try {
     await ensureExpiryReminderNotification(req.dbUser);
 
-    const notifications = await Notification.find({
-      user: req.dbUser._id,
-    })
-      .sort({ createdAt: -1 })
-      .limit(30);
-
-    const unreadCount = await Notification.countDocuments({
-      user: req.dbUser._id,
-      isRead: false,
-    });
+    const [notifications, unreadCount] = await Promise.all([
+      Notification.find({
+        user: req.dbUser._id,
+      })
+        .sort({ createdAt: -1 })
+        .limit(30)
+        .lean(),
+      Notification.countDocuments({
+        user: req.dbUser._id,
+        isRead: false,
+      }),
+    ]);
 
     res.status(200).json({
       success: true,

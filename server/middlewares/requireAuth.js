@@ -14,42 +14,48 @@ const requireAuth = async(req, res, next) => {
             });
         }
 
-        // Get the user's profile from Clerk
-        const clerkUser = await clerkClient.users.getUser(userId);
+        // Fast path: look up existing user directly in MongoDB without calling Clerk REST API
+        let dbUser = await User.findOne({ clerkId: userId }).lean();
 
-        const email = clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress;
+        if (!dbUser) {
+            // First-time user: fetch profile from Clerk and upsert into MongoDB
+            const clerkUser = await clerkClient.users.getUser(userId);
 
-        if(!email) {
-            return res.status(400).json({
-                success: false,
-                message: "Your Clerk account does not have an email address.",
-            });
-        }
+            const email =
+                clerkUser.primaryEmailAddress?.emailAddress ||
+                clerkUser.emailAddresses[0]?.emailAddress;
 
-        // Find the user in MongoDB or create a new one
-        const dbUser = await User.findOneAndUpdate(
-            { clerkId: userId },
-            {
-                $set: {
-                    firstName: clerkUser.firstName || "",
-                    lastName: clerkUser.lastName || "",
-                    email,
-                    imageUrl: clerkUser.imageUrl || "",
-                },
-                $setOnInsert: {
-                    clerkId: userId,
-                    plan: "free",
-                    selectedModel: "gemini-3.1-flash-lite",
-                    subscriptionStatus: "active",
-                    isActive: true,
-                },
-            },
-            {
-                new: true,
-                upsert: true,
-                runValidators: true,
+            if (!email) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Your Clerk account does not have an email address.",
+                });
             }
-        );
+
+            dbUser = await User.findOneAndUpdate(
+                { clerkId: userId },
+                {
+                    $set: {
+                        firstName: clerkUser.firstName || "",
+                        lastName: clerkUser.lastName || "",
+                        email,
+                        imageUrl: clerkUser.imageUrl || "",
+                    },
+                    $setOnInsert: {
+                        clerkId: userId,
+                        plan: "free",
+                        selectedModel: "gemini-3.1-flash-lite",
+                        subscriptionStatus: "active",
+                        isActive: true,
+                    },
+                },
+                {
+                    new: true,
+                    upsert: true,
+                    runValidators: true,
+                }
+            ).lean();
+        }
 
         if(!dbUser.isActive) {
             return res.status(403).json({

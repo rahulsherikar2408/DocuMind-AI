@@ -17,14 +17,15 @@ function ApiProvider({ children }: ApiProviderProps) {
   const initializedRef = useRef(false);
   const previousUserIdRef = useRef<string | null | undefined>(undefined);
 
+  // Register token getter before child components mount and trigger queries
+  setClerkTokenGetter(getToken);
+
   useEffect(() => {
     setClerkTokenGetter(getToken);
   }, [getToken]);
 
   useEffect(() => {
     if (!isLoaded) return;
-
-    queryClient.clear();
 
     if (!initializedRef.current) {
       initializedRef.current = true;
@@ -34,6 +35,10 @@ function ApiProvider({ children }: ApiProviderProps) {
 
     const prevUserId = previousUserIdRef.current;
     const currentUserId = userId ?? null;
+
+    if (prevUserId !== currentUserId) {
+      queryClient.clear();
+    }
 
     if (!prevUserId && currentUserId) {
       toast.success("Signed in successfully. Welcome back!", "Welcome");

@@ -129,7 +129,8 @@ export const getChats = async(req, res) => {
             user: req.dbUser._id,
         })
           .populate("document", "fileName pageCount status")
-          .sort({ lastMessageAt: -1});
+          .sort({ lastMessageAt: -1 })
+          .lean();
 
         res.status(200).json({
             success: true,
