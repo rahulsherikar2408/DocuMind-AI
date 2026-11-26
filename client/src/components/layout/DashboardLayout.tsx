@@ -22,6 +22,7 @@ import {
   useNotifications,
 } from "../../hooks/useNotifications";
 import { useToast } from "../../hooks/useToast";
+import { AUTH_STATE_KEY, PENDING_TOAST_KEY } from "../../contexts/toastTypes";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -376,6 +377,19 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
                     role="menuitem"
                     onClick={() => {
                       setMenuOpen(false);
+                      try {
+                        sessionStorage.setItem(AUTH_STATE_KEY, "signed_out");
+                        sessionStorage.setItem(
+                          PENDING_TOAST_KEY,
+                          JSON.stringify({
+                            variant: "info",
+                            title: "Signed Out",
+                            message: "You have been signed out.",
+                          })
+                        );
+                      } catch {
+                        // Ignore storage errors
+                      }
                       signOut();
                     }}
                     className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40 cursor-pointer"

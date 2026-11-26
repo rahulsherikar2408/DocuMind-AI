@@ -1,4 +1,11 @@
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   CheckCircle2,
   AlertCircle,
@@ -7,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  PENDING_TOAST_KEY,
   ToastContext,
   type ToastItem,
   type ToastVariant,
@@ -60,6 +68,9 @@ const VARIANT_STYLES: Record<
 
 function ToastProvider({ children }: ToastProviderProps) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const recentToastRef = useRef<{ key: string; timestamp: number } | null>(
+    null
+  );
 
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((item) => item.id !== id));
@@ -77,9 +88,23 @@ function ToastProvider({ children }: ToastProviderProps) {
       variant?: ToastVariant;
       duration?: number;
     }) => {
-      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const dedupeKey = `${variant}:${title || ""}:${message}`;
+      const now = Date.now();
+      if (
+        recentToastRef.current &&
+        recentToastRef.current.key === dedupeKey &&
+        now - recentToastRef.current.timestamp < 800
+      ) {
+        return;
+      }
+      recentToastRef.current = { key: dedupeKey, timestamp: now };
 
-      setToasts((prev) => [...prev.slice(-3), { id, title, message, variant, duration }]);
+      const id = `${now}-${Math.random().toString(36).slice(2, 8)}`;
+
+      setToasts((prev) => [
+        ...prev.slice(-3),
+        { id, title, message, variant, duration },
+      ]);
 
       if (duration > 0) {
         window.setTimeout(() => {
@@ -89,6 +114,29 @@ function ToastProvider({ children }: ToastProviderProps) {
     },
     [dismissToast]
   );
+
+  // Flush any pending toast saved before a full-page auth redirect
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(PENDING_TOAST_KEY);
+      if (!raw) return;
+      sessionStorage.removeItem(PENDING_TOAST_KEY);
+      const parsed = JSON.parse(raw) as {
+        title?: string;
+        message?: string;
+        variant?: ToastVariant;
+      };
+      if (parsed?.message) {
+        showToast({
+          title: parsed.title,
+          message: parsed.message,
+          variant: parsed.variant || "info",
+        });
+      }
+    } catch {
+      sessionStorage.removeItem(PENDING_TOAST_KEY);
+    }
+  }, [showToast]);
 
   const success = useCallback(
     (message: string, title?: string) =>

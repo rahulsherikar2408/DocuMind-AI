@@ -1,9 +1,13 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useAuth } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { setClerkTokenGetter } from "../../services/api";
 import { useToast } from "../../hooks/useToast";
+import {
+  AUTH_STATE_KEY,
+  PENDING_TOAST_KEY,
+} from "../../contexts/toastTypes";
 
 interface ApiProviderProps {
   children: ReactNode;
@@ -14,12 +18,6 @@ function ApiProvider({ children }: ApiProviderProps) {
   const queryClient = useQueryClient();
   const toast = useToast();
 
-  const initializedRef = useRef(false);
-  const previousUserIdRef = useRef<string | null | undefined>(undefined);
-
-  // Register token getter before child components mount and trigger queries
-  setClerkTokenGetter(getToken);
-
   useEffect(() => {
     setClerkTokenGetter(getToken);
   }, [getToken]);
@@ -27,26 +25,33 @@ function ApiProvider({ children }: ApiProviderProps) {
   useEffect(() => {
     if (!isLoaded) return;
 
-    if (!initializedRef.current) {
-      initializedRef.current = true;
-      previousUserIdRef.current = userId ?? null;
-      return;
+    queryClient.clear();
+
+    try {
+      const prevState = sessionStorage.getItem(AUTH_STATE_KEY);
+
+      if (userId) {
+        if (prevState === "signed_out") {
+          sessionStorage.setItem(AUTH_STATE_KEY, "signed_in");
+          toast.success(
+            "Signed in successfully. Welcome back!",
+            "Welcome"
+          );
+        } else if (!prevState) {
+          sessionStorage.setItem(AUTH_STATE_KEY, "signed_in");
+        }
+      } else {
+        if (prevState === "signed_in") {
+          sessionStorage.setItem(AUTH_STATE_KEY, "signed_out");
+          sessionStorage.removeItem(PENDING_TOAST_KEY);
+          toast.info("You have been signed out.", "Signed Out");
+        } else {
+          sessionStorage.setItem(AUTH_STATE_KEY, "signed_out");
+        }
+      }
+    } catch {
+      // Ignore storage errors in restricted environments
     }
-
-    const prevUserId = previousUserIdRef.current;
-    const currentUserId = userId ?? null;
-
-    if (prevUserId !== currentUserId) {
-      queryClient.clear();
-    }
-
-    if (!prevUserId && currentUserId) {
-      toast.success("Signed in successfully. Welcome back!", "Welcome");
-    } else if (prevUserId && !currentUserId) {
-      toast.info("You have been signed out.", "Signed Out");
-    }
-
-    previousUserIdRef.current = currentUserId;
   }, [userId, isLoaded, queryClient, toast]);
 
   return <>{children}</>;

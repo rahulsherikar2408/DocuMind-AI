@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useCurrentSubscription } from "../../hooks/useSubscription";
 import ContactSupportModal from "../common/ContactSupportModal";
+import { AUTH_STATE_KEY, PENDING_TOAST_KEY } from "../../contexts/toastTypes";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -183,7 +184,22 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
 
           <button
             type="button"
-            onClick={() => signOut()}
+            onClick={() => {
+              try {
+                sessionStorage.setItem(AUTH_STATE_KEY, "signed_out");
+                sessionStorage.setItem(
+                  PENDING_TOAST_KEY,
+                  JSON.stringify({
+                    variant: "info",
+                    title: "Signed Out",
+                    message: "You have been signed out.",
+                  })
+                );
+              } catch {
+                // Ignore storage errors
+              }
+              signOut();
+            }}
             className="mt-4 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-red-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-red-400 cursor-pointer"
           >
             <LogOut size={19} />
