@@ -17,6 +17,10 @@ import documentRoutes from "./routes/documentRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import summaryRoutes from "./routes/summaryRoutes.js";
 import suggestedQuestionsRoutes from "./routes/suggestedQuestionsRoutes.js";
+import subscriptionRoutes from "./routes/subscriptionRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import supportRoutes from "./routes/supportRoutes.js";
+import { scanUsersForExpiryReminders } from "./services/notificationService.js";
 
 const app = express();
 
@@ -52,6 +56,9 @@ app.use("/api/documents", documentRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/summaries", summaryRoutes);
 app.use("/api/suggested-questions", suggestedQuestionsRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/support", supportRoutes);
 
 // Root route
 app.get("/", (req, res) => {
@@ -90,7 +97,13 @@ app.use((error, req, res, next) => {
   }
 
   // Handle file type validations errors
-  if(error.message === "Only PDF files are allowed.") {
+  if (
+    error.message === "Only PDF files are allowed." ||
+    error.message ===
+      "Only PDF and scanned image files (PNG, JPG, JPEG, WEBP) are allowed." ||
+    error.message ===
+      "Invalid file type. Please upload a PDF or a scanned image (PNG, JPG, WEBP)."
+  ) {
     return res.status(400).json({
       success: false,
       message: error.message,
@@ -114,6 +127,8 @@ const startServer = async () => {
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      scanUsersForExpiryReminders();
+      setInterval(scanUsersForExpiryReminders, 60 * 60 * 1000);
     });
   } catch (error) {
     console.error("Server startup failed:", error.message);

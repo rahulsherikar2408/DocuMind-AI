@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useClerk } from "@clerk/react";
 
@@ -11,7 +12,10 @@ import {
   LogOut,
   Plus,
   X,
+  Crown,
 } from "lucide-react";
+import { useCurrentSubscription } from "../../hooks/useSubscription";
+import ContactSupportModal from "../common/ContactSupportModal";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -20,6 +24,9 @@ interface SidebarProps {
 
 function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { signOut } = useClerk();
+  const { data: subscription } = useCurrentSubscription();
+  const [supportOpen, setSupportOpen] = useState(false);
+  const currentPlan = subscription?.plan || "free";
   const navigation = [
     {
       name: "Dashboard",
@@ -138,6 +145,20 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Bottom Section */}
         <div className="border-t border-slate-100 p-4 dark:border-slate-800">
+          <Link
+            to="/settings#subscription"
+            onClick={onClose}
+            className="mb-3 flex items-center justify-between rounded-xl border border-indigo-100 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-300 dark:border-indigo-900/40 dark:bg-slate-800/70 dark:text-slate-200"
+          >
+            <span className="flex items-center gap-2 capitalize">
+              <Crown size={15} className="text-indigo-600 dark:text-indigo-400" />
+              {currentPlan} Plan
+            </span>
+            <span className="text-indigo-600 dark:text-indigo-400">
+              {currentPlan === "pro" ? "Pro" : "Upgrade"}
+            </span>
+          </Link>
+
           <div className="rounded-xl bg-indigo-50 p-4 dark:border dark:border-indigo-900/40 dark:bg-indigo-950/30">
             <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400">
               <HelpCircle size={18} />
@@ -148,12 +169,16 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
               Have questions? We're here to help you get started.
             </p>
 
-            <a
-              href="mailto:sherikarrahul59@gmail.com"
-              className="mt-3 inline-block text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                setSupportOpen(true);
+              }}
+              className="mt-3 inline-block text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400 cursor-pointer"
             >
               Contact Support
-            </a>
+            </button>
           </div>
 
           <button
@@ -166,6 +191,11 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
       </aside>
+
+      <ContactSupportModal
+        isOpen={supportOpen}
+        onClose={() => setSupportOpen(false)}
+      />
     </>
   );
 }

@@ -1,12 +1,17 @@
 import genAI from "../config/gemini.js";
 
-const GENERATION_MODEL = "gemini-3.5-flash-lite";
+const DEFAULT_GENERATION_MODEL = "gemini-3.1-flash-lite";
 
 /**
  * Generate an answer using retrieved document chunks.
  */
-const generateDocumentAnswer = async ({ question, chunks }) => {
+const generateDocumentAnswer = async ({
+  question,
+  chunks,
+  model = DEFAULT_GENERATION_MODEL,
+}) => {
   try {
+    const activeModel = model || DEFAULT_GENERATION_MODEL;
     // 1. Validate the question.
     if (
       typeof question !== "string" ||
@@ -65,7 +70,7 @@ const generateDocumentAnswer = async ({ question, chunks }) => {
 
     // 5. Generate the answer using Gemini.
     const interaction = await genAI.interactions.create({
-      model: GENERATION_MODEL,
+      model: activeModel,
       input: prompt,
     });
 
@@ -77,7 +82,7 @@ const generateDocumentAnswer = async ({ question, chunks }) => {
 
     return {
       answer,
-      model: GENERATION_MODEL,
+      model: activeModel,
       sources: chunks.map((chunk) => ({
         document: chunk.document,
         pageNumber: chunk.pageNumber,

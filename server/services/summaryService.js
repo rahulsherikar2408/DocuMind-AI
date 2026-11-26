@@ -2,7 +2,11 @@
 import genAI from "../config/gemini.js";
 import DocumentChunk from "../models/DocumentChunk.js";
 
-const generateDocumentSummary = async (documentId, userId) => {
+const generateDocumentSummary = async (
+    documentId,
+    userId,
+    model = "gemini-3.1-flash-lite"
+) => {
     try {
         // Retrieve all chunks belonging to this user's document
         const chunks = await DocumentChunk.find({
@@ -23,7 +27,7 @@ const generateDocumentSummary = async (documentId, userId) => {
 
         // Generate summary using Gemini
         const response = await genAI.interactions.create({
-            model: "gemini-3.5-flash-lite",
+            model: model || "gemini-3.1-flash-lite",
             input: `
                 You are a professional document summarization assistant.
 

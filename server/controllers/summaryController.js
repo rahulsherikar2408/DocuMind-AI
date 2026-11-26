@@ -2,6 +2,7 @@
 import mongoose from "mongoose";
 
 import Document from "../models/Document.js";
+import { resolveModelForUser } from "../config/plans.js";
 import generateDocumentSummary from "../services/summaryService.js";
 
 export const generateSummary = async (req, res, next) => {
@@ -32,9 +33,11 @@ export const generateSummary = async (req, res, next) => {
         }
 
         // Generate document summary
+        const activeModel = resolveModelForUser(req.dbUser, req.body?.model);
         const summary = await generateDocumentSummary(
             document._id,
-            userId
+            userId,
+            activeModel
         );
 
         return res.status(200).json({

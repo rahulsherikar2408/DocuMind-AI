@@ -1,11 +1,17 @@
-import { SignIn } from "@clerk/react";
-import ThemeToggle from "../components/common/ThemeToggle";
-import { Link } from "react-router-dom";
+import { SignIn, useAuth } from "@clerk/react";
+import { Link, Navigate } from "react-router-dom";
 import { BrainCircuit } from "lucide-react";
+import ThemeToggle from "../components/common/ThemeToggle";
 
 function SignInPage() {
+  const { isLoaded, isSignedIn } = useAuth();
+
+  if (isLoaded && isSignedIn) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-slate-50 p-4 transition-colors duration-200 dark:bg-slate-950">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-indigo-50/70 via-slate-50 to-white px-4 py-20 transition-colors duration-200 dark:from-slate-900 dark:via-slate-950 dark:to-slate-950">
       {/* Top Bar with Logo and Theme Toggle */}
       <div className="absolute top-4 left-4 right-4 flex items-center justify-between sm:top-6 sm:left-8 sm:right-8">
         <Link to="/" className="flex items-center gap-2">
@@ -20,11 +26,13 @@ function SignInPage() {
         <ThemeToggle />
       </div>
 
-      <div className="w-full max-w-md pt-12 sm:pt-0">
-        <SignIn 
+      <div className="flex w-full max-w-md justify-center">
+        <SignIn
           routing="path"
           path="/sign-in"
           signUpUrl="/sign-up"
+          forceRedirectUrl="/dashboard"
+          fallbackRedirectUrl="/dashboard"
         />
       </div>
     </div>

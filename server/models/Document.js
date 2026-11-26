@@ -39,6 +39,11 @@ const documentSchema = new mongoose.Schema({
         enum: ["cloudinary", "s3"],
         default: "cloudinary",
     },
+    storageResourceType: {
+        type: String,
+        enum: ["raw", "image"],
+        default: "raw",
+    },
     storageUrl: {
         type: String,
         default: "",
@@ -46,6 +51,16 @@ const documentSchema = new mongoose.Schema({
     storageKey: {
         type: String,
         default: "",
+    },
+    // Extraction / OCR metadata
+    isScanned: {
+        type: Boolean,
+        default: false,
+    },
+    extractionMethod: {
+        type: String,
+        enum: ["text", "ocr"],
+        default: "text",
     },
     // Document processing status
     status: {

@@ -11,15 +11,19 @@ import {
   RefreshCw,
   Download,
   ExternalLink,
+  Trash2,
 } from "lucide-react";
 
 import DashboardLayout from "../components/layout/DashboardLayout";
 import DocumentInfo from "../components/documents/DocumentInfo";
+import DeleteDocumentModal from "../components/documents/DeleteDocumentModal";
 
 import { useDocument } from "../hooks/useDocuments";
 import { useCreateChat } from "../hooks/useCreateChat";
 import { useGenerateSummary } from "../hooks/useGenerateSummary";
 import { useSuggestedQuestions } from "../hooks/useSuggestedQuestions";
+import { useDeleteDocument } from "../hooks/useDeleteDocument";
+import { useToast } from "../hooks/useToast";
 import type { Document as DisplayDocumentType } from "../types/document";
 
 function DocumentDetails() {
@@ -27,6 +31,11 @@ function DocumentDetails() {
   const navigate = useNavigate();
 
   const [chatError, setChatError] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const deleteMutation = useDeleteDocument();
+  const toast = useToast();
 
   // Fetch document details
   const {
@@ -76,10 +85,9 @@ function DocumentDetails() {
       navigate(`/chat/${newChat._id}`);
     } catch (error) {
       console.error("Failed to create document chat:", error);
-
-      setChatError(
-        "Unable to start a chat with this document. Please try again."
-      );
+      const msg = "Unable to start a chat with this document. Please try again.";
+      setChatError(msg);
+      toast.error(msg, "Chat Error");
     }
   };
 
@@ -89,8 +97,10 @@ function DocumentDetails() {
 
     try {
       await generateSummary(document._id);
+      toast.success("Document summary generated!", "Summary Ready");
     } catch (error) {
       console.error("Summary generation failed:", error);
+      toast.error("Failed to generate document summary.", "Summary Error");
     }
   };
 
@@ -115,10 +125,33 @@ function DocumentDetails() {
         "Failed to start suggested question chat:",
         error
       );
+      const msg = "Unable to start a chat. Please try again.";
+      setChatError(msg);
+      toast.error(msg, "Chat Error");
+    }
+  };
 
-      setChatError(
-        "Unable to start a chat. Please try again."
+  const handleDeleteConfirm = async () => {
+    if (!document?._id) return;
+
+    try {
+      setDeleteError(null);
+      const deletedName = document.fileName;
+      await deleteMutation.mutateAsync(document._id);
+      toast.success(
+        `"${deletedName}" and its related chats were deleted.`,
+        "Document Deleted"
       );
+      navigate("/documents", { replace: true });
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { message?: string } } };
+      const msg =
+        apiErr.response?.data?.message ||
+        (err instanceof Error
+          ? err.message
+          : "Failed to delete document. Please try again.");
+      setDeleteError(msg);
+      toast.error(msg, "Delete Failed");
     }
   };
 
@@ -169,6 +202,8 @@ function DocumentDetails() {
     size: `${(document.fileSize / (1024 * 1024)).toFixed(2)} MB`,
     pages: document.pageCount,
     status: document.status,
+    extractionMethod: document.extractionMethod,
+    isScanned: document.isScanned,
   };
 
   return (
@@ -196,47 +231,62 @@ function DocumentDetails() {
           </div>
 
           {/* Action Buttons */}
-          {isDocumentCompleted && (
-            <div className="flex flex-wrap gap-3">
-              {/* Generate Summary */}
-              <button
-                onClick={handleGenerateSummary}
-                disabled={isGenerating}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Generating Summary...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4" />
-                    Generate Summary
-                  </>
-                )}
-              </button>
+          <div className="flex flex-wrap gap-3">
+            {isDocumentCompleted && (
+              <>
+                {/* Generate Summary */}
+                <button
+                  onClick={handleGenerateSummary}
+                  disabled={isGenerating}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Generating Summary...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Generate Summary
+                    </>
+                  )}
+                </button>
 
-              {/* Chat with Document */}
-              <button
-                onClick={handleChatWithDocument}
-                disabled={isCreatingChat}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 cursor-pointer"
-              >
-                {isCreatingChat ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Starting Chat...
-                  </>
-                ) : (
-                  <>
-                    <MessageSquare className="h-4 w-4" />
-                    Chat with Document
-                  </>
-                )}
-              </button>
-            </div>
-          )}
+                {/* Chat with Document */}
+                <button
+                  onClick={handleChatWithDocument}
+                  disabled={isCreatingChat}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                >
+                  {isCreatingChat ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Starting Chat...
+                    </>
+                  ) : (
+                    <>
+                      <MessageSquare className="h-4 w-4" />
+                      Chat with Document
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+
+            {/* Delete Document */}
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteError(null);
+                setShowDeleteModal(true);
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/60 cursor-pointer"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </button>
+          </div>
         </div>
 
         {/* Chat Error */}
@@ -434,11 +484,21 @@ function DocumentDetails() {
           {document.storageUrl ? (
             <>
               <div className="relative w-full bg-slate-100 dark:bg-slate-950">
-                <iframe
-                  src={`${document.storageUrl}#toolbar=1`}
-                  title={`Preview of ${document.fileName}`}
-                  className="h-[650px] w-full border-0"
-                />
+                {document.mimeType?.startsWith("image/") ? (
+                  <div className="flex max-h-[650px] items-center justify-center overflow-auto p-4">
+                    <img
+                      src={document.storageUrl}
+                      alt={document.fileName}
+                      className="max-h-[620px] rounded-lg object-contain shadow-sm"
+                    />
+                  </div>
+                ) : (
+                  <iframe
+                    src={`${document.storageUrl}#toolbar=1`}
+                    title={`Preview of ${document.fileName}`}
+                    className="h-[420px] w-full border-0 sm:h-[550px] lg:h-[650px]"
+                  />
+                )}
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50 px-6 py-3.5 text-xs text-gray-500 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-400">
@@ -489,6 +549,17 @@ function DocumentDetails() {
           )}
         </div>
       </div>
+
+      <DeleteDocumentModal
+        fileName={showDeleteModal ? document.fileName : null}
+        isDeleting={deleteMutation.isPending}
+        error={deleteError}
+        onCancel={() => {
+          setShowDeleteModal(false);
+          setDeleteError(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+      />
     </DashboardLayout>
   );
 }

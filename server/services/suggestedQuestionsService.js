@@ -1,7 +1,11 @@
 import genAI from "../config/gemini.js";
 import DocumentChunk from "../models/DocumentChunk.js";
 
-const generateSuggestedQuestions = async (documentId, userId) => {
+const generateSuggestedQuestions = async (
+    documentId,
+    userId,
+    model = "gemini-3.1-flash-lite"
+) => {
     try {
         // Retrieve document chunks belonging to the authenticated user
         const chunks = await DocumentChunk.find({
@@ -23,7 +27,7 @@ const generateSuggestedQuestions = async (documentId, userId) => {
 
         // Generate suggested questions using Gemini
         const response = await genAI.interactions.create({
-            model: "gemini-3.5-flash-lite",
+            model: model || "gemini-3.1-flash-lite",
             input: `
                 You are an intelligent document assistant.
 

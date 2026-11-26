@@ -27,6 +27,7 @@ export interface ChatMessage {
   chat: string;
   role: "user" | "assistant";
   content: string;
+  model?: string;
   sources: MessageSource[];
   createdAt: string;
   updatedAt: string;
@@ -62,6 +63,7 @@ export interface GetChatResponse {
 
 export interface SendMessagePayload {
   content: string;
+  model?: string;
 }
 
 export interface SendMessageResponse {

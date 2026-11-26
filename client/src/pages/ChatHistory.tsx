@@ -14,6 +14,7 @@ import {
 import DashboardLayout from "../components/layout/DashboardLayout";
 import { useChats } from "../hooks/useChats";
 import { useDeleteChat } from "../hooks/useDeleteChat";
+import { useToast } from "../hooks/useToast";
 import type { Chat } from "../types/chat";
 
 function ChatHistory() {
@@ -31,6 +32,7 @@ function ChatHistory() {
 
   const [chatToDelete, setChatToDelete] = useState<Chat | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const toast = useToast();
 
   // Close modal on escape key
   useEffect(() => {
@@ -50,15 +52,18 @@ function ChatHistory() {
 
     try {
       setDeleteError(null);
+      const title = chatToDelete.title;
       await deleteChatMutation(chatToDelete._id);
       setChatToDelete(null);
+      toast.success(`Conversation "${title}" deleted.`, "Chat Deleted");
     } catch (err: unknown) {
       console.error("Failed to delete chat:", err);
-      setDeleteError(
+      const msg =
         err instanceof Error
           ? err.message
-          : "Failed to delete chat. Please try again."
-      );
+          : "Failed to delete chat. Please try again.";
+      setDeleteError(msg);
+      toast.error(msg, "Delete Failed");
     }
   };
 

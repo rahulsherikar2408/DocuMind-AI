@@ -26,14 +26,23 @@ function DocumentInfo({ document }: DocumentInfoProps) {
               {document.name}
             </h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              PDF Document
+              {document.extractionMethod === "ocr" || document.isScanned
+                ? "Scanned Document (OCR Processed)"
+                : "PDF Document"}
             </p>
           </div>
         </div>
 
-        <span className={`w-fit rounded-full px-3 py-1.5 text-xs font-medium capitalize ${statusStyles[document.status]}`}>
-          {document.status}
-        </span>
+        <div className="flex items-center gap-2">
+          {(document.extractionMethod === "ocr" || document.isScanned) && (
+            <span className="w-fit rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+              OCR
+            </span>
+          )}
+          <span className={`w-fit rounded-full px-3 py-1.5 text-xs font-medium capitalize ${statusStyles[document.status]}`}>
+            {document.status}
+          </span>
+        </div>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 border-t border-slate-100 pt-5 dark:border-slate-800 sm:grid-cols-3">

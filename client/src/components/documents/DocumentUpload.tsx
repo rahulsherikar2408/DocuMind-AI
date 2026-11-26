@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
+import { Link } from "react-router-dom";
 
 import {
   FileText,
@@ -7,13 +8,20 @@ import {
   X,
   CheckCircle,
   LoaderCircle,
+  ScanText,
+  Crown,
 } from "lucide-react";
+import { useCurrentSubscription } from "../../hooks/useSubscription";
+import { useToast } from "../../hooks/useToast";
 
 interface DocumentUploadProps {
   onClose: () => void;
-  onUpload: (file: File) => Promise<void>;
+  onUpload: (file: File, options?: { ocr?: boolean }) => Promise<void>;
   isUploading: boolean;
 }
+
+const IMAGE_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+const IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
 
 function DocumentUpload({
   onClose,
@@ -21,20 +29,63 @@ function DocumentUpload({
   isUploading,
 }: DocumentUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { data: subscription } = useCurrentSubscription();
+  const toast = useToast();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [useOcr, setUseOcr] = useState(false);
   const [error, setError] = useState("");
+  const [showUpgradeLink, setShowUpgradeLink] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Validate selected PDF
-  const validateFile = (file: File) => {
-    const isPdf =
-      file.type === "application/pdf" ||
-      file.name.toLowerCase().endsWith(".pdf");
+  const allowScannedOcr = subscription?.usage?.allowScannedOcr ?? true;
+  const planName = subscription?.planDetails?.name || "Free";
+  const todayUploadsCount = subscription?.usage?.todayUploadsCount ?? 0;
+  const dailyUploadLimit =
+    subscription?.usage !== undefined
+      ? subscription.usage.dailyUploadLimit
+      : subscription?.plan === "pro"
+        ? null
+        : subscription?.plan === "plus"
+          ? 10
+          : 2;
+  const isDailyLimitReached =
+    Boolean(subscription) &&
+    dailyUploadLimit !== null &&
+    todayUploadsCount >= dailyUploadLimit;
 
-    if (!isPdf || !file.name.toLowerCase().endsWith(".pdf")) {
+  const isImageFile = (file: File) => {
+    const lowerName = file.name.toLowerCase();
+    return (
+      IMAGE_MIME_TYPES.has(file.type) ||
+      IMAGE_EXTENSIONS.some((ext) => lowerName.endsWith(ext))
+    );
+  };
+
+  // Validate selected file
+  const validateFile = (file: File) => {
+    setShowUpgradeLink(false);
+
+    const lowerName = file.name.toLowerCase();
+    const isPdf = file.type === "application/pdf" || lowerName.endsWith(".pdf");
+    const isImg = isImageFile(file);
+
+    if (!isPdf && !isImg) {
       setSelectedFile(null);
-      setError("Only PDF files are allowed.");
+      setError(
+        allowScannedOcr
+          ? "Only PDF or scanned image files (PNG, JPG, WEBP) are allowed."
+          : "Only PDF files are allowed."
+      );
+      return;
+    }
+
+    if (isImg && !allowScannedOcr) {
+      setSelectedFile(null);
+      setError(
+        "Scanned image uploads and OCR are only available on Plus and Pro plans."
+      );
+      setShowUpgradeLink(true);
       return;
     }
 
@@ -52,6 +103,9 @@ function DocumentUpload({
 
     setError("");
     setSelectedFile(file);
+    if (isImg) {
+      setUseOcr(true);
+    }
   };
 
   // Handle file selection
@@ -92,29 +146,44 @@ function DocumentUpload({
     setIsDragging(false);
   };
 
-  // Upload selected PDF
+  // Upload selected document
   const handleUpload = async () => {
     if (!selectedFile || isUploading) return;
 
     setError("");
+    setShowUpgradeLink(false);
 
     try {
-      await onUpload(selectedFile);
+      await onUpload(selectedFile, {
+        ocr: allowScannedOcr ? useOcr : false,
+      });
     } catch (err) {
       const apiError = err as {
         response?: {
+          status?: number;
           data?: {
+            code?: string;
             message?: string;
           };
         };
       };
 
-      setError(
+      const errCode = apiError.response?.data?.code;
+      if (
+        errCode === "DAILY_LIMIT_REACHED" ||
+        errCode === "OCR_PLAN_REQUIRED" ||
+        apiError.response?.status === 403
+      ) {
+        setShowUpgradeLink(true);
+      }
+
+      const msg =
         apiError.response?.data?.message ||
-          (err instanceof Error
-            ? err.message
-            : "Unable to upload document. Please try again."),
-      );
+        (err instanceof Error
+          ? err.message
+          : "Unable to upload document. Please try again.");
+      setError(msg);
+      toast.error(msg, "Upload Failed");
     }
   };
 
@@ -129,7 +198,9 @@ function DocumentUpload({
             </h2>
 
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Select a PDF to get started.
+              {allowScannedOcr
+                ? "Select a PDF or scanned image (OCR enabled)."
+                : "Select a text-based PDF to get started."}
             </p>
           </div>
 
@@ -144,12 +215,48 @@ function DocumentUpload({
           </button>
         </div>
 
+        {/* Plan usage banner */}
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-2.5 text-xs dark:border-slate-800 dark:bg-slate-800/50">
+          <span className="font-medium text-slate-600 dark:text-slate-300">
+            {planName} Plan ·{" "}
+            {dailyUploadLimit === null
+              ? `${todayUploadsCount} uploaded today (Unlimited)`
+              : `${todayUploadsCount}/${dailyUploadLimit} daily uploads used`}
+          </span>
+
+          {dailyUploadLimit !== null && (
+            <Link
+              to="/settings#subscription"
+              onClick={onClose}
+              className="inline-flex items-center gap-1 font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+            >
+              <Crown size={12} />
+              Upgrade
+            </Link>
+          )}
+        </div>
+
+        {isDailyLimitReached && (
+          <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
+            You have reached your daily limit of {dailyUploadLimit} documents on the{" "}
+            {planName} plan.{" "}
+            <Link
+              to="/settings#subscription"
+              onClick={onClose}
+              className="font-semibold underline"
+            >
+              Upgrade your plan
+            </Link>{" "}
+            to upload more documents today.
+          </div>
+        )}
+
         {/* Drag and Drop Area */}
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
-          className={`mt-6 rounded-xl border-2 border-dashed p-8 text-center transition ${
+          className={`mt-5 rounded-xl border-2 border-dashed p-7 text-center transition ${
             isDragging
               ? "border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-950/40"
               : "border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/40"
@@ -160,7 +267,9 @@ function DocumentUpload({
           </div>
 
           <p className="mt-4 font-medium text-slate-700 dark:text-slate-200">
-            Drag and drop your PDF here
+            {allowScannedOcr
+              ? "Drag and drop your PDF or scanned image here"
+              : "Drag and drop your PDF here"}
           </p>
 
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">or</p>
@@ -168,7 +277,7 @@ function DocumentUpload({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
+            disabled={isUploading || isDailyLimitReached}
             className="mt-3 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
           >
             Browse Files
@@ -177,16 +286,46 @@ function DocumentUpload({
           <input
             ref={fileInputRef}
             type="file"
-            accept=".pdf,application/pdf"
+            accept={
+              allowScannedOcr
+                ? ".pdf,application/pdf,image/png,image/jpeg,image/webp"
+                : ".pdf,application/pdf"
+            }
             onChange={handleFileChange}
-            disabled={isUploading}
+            disabled={isUploading || isDailyLimitReached}
             className="hidden"
           />
 
           <p className="mt-4 text-xs text-slate-400 dark:text-slate-500">
-            PDF files only · Maximum size 10 MB
+            {allowScannedOcr
+              ? "PDF, PNG, JPG, WEBP · OCR supported · Max 10 MB"
+              : "Text-based PDFs only · Max 10 MB (OCR requires Plus/Pro)"}
           </p>
         </div>
+
+        {/* OCR Toggle for Plus/Pro */}
+        {allowScannedOcr && selectedFile && !isImageFile(selectedFile) && (
+          <label className="mt-4 flex cursor-pointer items-center justify-between rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900/50 dark:bg-indigo-950/30">
+            <div className="flex items-center gap-2.5">
+              <ScanText size={18} className="text-indigo-600 dark:text-indigo-400" />
+              <div>
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  Force Scanned Document OCR
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Scanned PDFs are detected automatically; enable to force Gemini OCR.
+                </p>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={useOcr}
+              onChange={(e) => setUseOcr(e.target.checked)}
+              disabled={isUploading}
+              className="h-4 w-4 accent-indigo-600"
+            />
+          </label>
+        )}
 
         {/* Selected File */}
         {selectedFile && (
@@ -208,7 +347,21 @@ function DocumentUpload({
         )}
 
         {/* Error Message */}
-        {error && <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && (
+          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
+            <p>{error}</p>
+            {showUpgradeLink && (
+              <Link
+                to="/settings#subscription"
+                onClick={onClose}
+                className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 underline dark:text-indigo-400"
+              >
+                <Crown size={12} />
+                View Plans & Upgrade in Settings
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* Footer Buttons */}
         <div className="mt-6 flex justify-end gap-3">
@@ -223,14 +376,14 @@ function DocumentUpload({
 
           <button
             type="button"
-            disabled={!selectedFile || isUploading}
+            disabled={!selectedFile || isUploading || isDailyLimitReached}
             onClick={handleUpload}
             className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
           >
             {isUploading ? (
               <>
                 <LoaderCircle size={17} className="animate-spin" />
-                Uploading...
+                {useOcr ? "Running OCR & Uploading..." : "Uploading..."}
               </>
             ) : (
               <>
@@ -242,7 +395,7 @@ function DocumentUpload({
         </div>
 
         <p className="mt-3 text-center text-xs text-slate-400 dark:text-slate-500">
-          Your PDF will be securely uploaded and saved.
+          Your document will be securely uploaded and processed.
         </p>
       </div>
     </div>

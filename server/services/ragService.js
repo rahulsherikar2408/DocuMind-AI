@@ -8,6 +8,7 @@ const generateRAGResponse = async ({
   question,
   userId,
   documentId,
+  model = "gemini-3.1-flash-lite",
 }) => {
   try {
     // 1. Validate the question.
@@ -42,7 +43,7 @@ const generateRAGResponse = async ({
         answer:
           "I couldn't find relevant information in your uploaded documents to answer this question.",
         sources: [],
-        model: "gemini-3.5-flash-lite",
+        model,
       };
     }
 
@@ -52,6 +53,7 @@ const generateRAGResponse = async ({
     const response = await generateDocumentAnswer({
       question: question.trim(),
       chunks: relevantChunks,
+      model,
     });
 
     console.log("\nRAG response generated successfully!");

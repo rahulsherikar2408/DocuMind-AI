@@ -3,6 +3,7 @@ import {
   FileText,
   Upload,
   MessageSquare,
+  Trash2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -10,11 +11,15 @@ import DashboardLayout from "../components/layout/DashboardLayout";
 import DocumentFilters from "../components/documents/DocumentFilters";
 import DocumentCard from "../components/documents/DocumentCard";
 import DocumentUpload from "../components/documents/DocumentUpload";
+import DeleteDocumentModal from "../components/documents/DeleteDocumentModal";
 
 import { useDocuments } from "../hooks/useDocuments";
 import { useUploadDocument } from "../hooks/useUploadDocument";
+import { useDeleteDocument } from "../hooks/useDeleteDocument";
+import { useToast } from "../hooks/useToast";
 
 import type { ViewMode } from "../components/documents/DocumentFilters";
+import type { Document as ApiDocument } from "../services/documentService";
 
 function Documents() {
   const {
@@ -24,12 +29,18 @@ function Documents() {
   } = useDocuments();
 
   const uploadMutation = useUploadDocument();
+  const deleteMutation = useDeleteDocument();
+  const toast = useToast();
 
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string>("all");
 
   const [view, setView] = useState<ViewMode>("grid");
   const [showUpload, setShowUpload] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<ApiDocument | null>(
+    null
+  );
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Filter documents
   const filteredDocuments = useMemo(() => {
@@ -46,11 +57,42 @@ function Documents() {
   }, [documents, search, status]);
 
   // Upload selected document
-  const handleUpload = async (file: File) => {
-    await uploadMutation.mutateAsync(file);
+  const handleUpload = async (file: File, options?: { ocr?: boolean }) => {
+    const uploaded = await uploadMutation.mutateAsync({ file, ocr: options?.ocr });
+    toast.success(
+      uploaded.extractionMethod === "ocr"
+        ? `"${uploaded.fileName}" uploaded and OCR processed!`
+        : `"${uploaded.fileName}" uploaded successfully!`,
+      "Upload Complete"
+    );
 
     // Close modal after successful upload
     setShowUpload(false);
+  };
+
+  // Confirm document deletion
+  const handleDeleteConfirm = async () => {
+    if (!documentToDelete) return;
+
+    try {
+      setDeleteError(null);
+      const deletedName = documentToDelete.fileName;
+      await deleteMutation.mutateAsync(documentToDelete._id);
+      setDocumentToDelete(null);
+      toast.success(
+        `"${deletedName}" and its related chats were deleted.`,
+        "Document Deleted"
+      );
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { message?: string } } };
+      const msg =
+        apiErr.response?.data?.message ||
+        (err instanceof Error
+          ? err.message
+          : "Failed to delete document. Please try again.");
+      setDeleteError(msg);
+      toast.error(msg, "Delete Failed");
+    }
   };
 
   return (
@@ -71,7 +113,7 @@ function Documents() {
           <button
             type="button"
             onClick={() => setShowUpload(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 cursor-pointer"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 sm:w-auto cursor-pointer"
           >
             <Upload size={18} />
             Upload Document
@@ -231,7 +273,8 @@ function Documents() {
                           : "failed",
                   }}
                   onDelete={() => {
-                    // Delete functionality placeholder
+                    setDeleteError(null);
+                    setDocumentToDelete(document);
                   }}
                 />
               ))}
@@ -341,6 +384,18 @@ function Documents() {
                                 <MessageSquare size={18} />
                               </Link>
                             )}
+
+                            <button
+                              type="button"
+                              title="Delete document"
+                              onClick={() => {
+                                setDeleteError(null);
+                                setDocumentToDelete(document);
+                              }}
+                              className="text-slate-400 transition hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400 cursor-pointer"
+                            >
+                              <Trash2 size={18} />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -391,6 +446,18 @@ function Documents() {
           isUploading={uploadMutation.isPending}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteDocumentModal
+        fileName={documentToDelete?.fileName || null}
+        isDeleting={deleteMutation.isPending}
+        error={deleteError}
+        onCancel={() => {
+          setDocumentToDelete(null);
+          setDeleteError(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+      />
     </DashboardLayout>
   );
 }

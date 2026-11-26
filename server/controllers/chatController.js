@@ -4,6 +4,7 @@ import Chat from "../models/Chat.js";
 import Message from "../models/Message.js";
 import Document from "../models/Document.js";
 
+import { getPlanConfig, resolveModelForUser } from "../config/plans.js";
 import generateRAGResponse from "../services/ragService.js";
 
 const escapeRegex = (string) => {
@@ -219,7 +220,18 @@ export const getChatById = async(req, res) => {
 export const sendMessage = async(req, res) => {
     try {
         const { id } = req.params;
-        const { content } = req.body;
+        const { content, model: requestedModel } = req.body;
+
+        const planConfig = getPlanConfig(req.dbUser.plan);
+        if (requestedModel && !planConfig.allowedModels.includes(requestedModel)) {
+            return res.status(403).json({
+                success: false,
+                code: "MODEL_SWITCH_FORBIDDEN",
+                message: `Model ${requestedModel} is only available on the Pro plan.`,
+            });
+        }
+
+        const activeModel = resolveModelForUser(req.dbUser, requestedModel);
 
         // 1. Validate chat ID
         if(!mongoose.isValidObjectId(id)) {
@@ -262,6 +274,7 @@ export const sendMessage = async(req, res) => {
             question: content.trim(),
             userId: req.dbUser._id.toString(),
             documentId: chat.document ? chat.document.toString() : undefined,
+            model: activeModel,
         });
 
         // 5. Save assistant response
@@ -269,6 +282,7 @@ export const sendMessage = async(req, res) => {
             chat: chat._id,
             role: "assistant",
             content: ragResponse.answer,
+            model: ragResponse.model || activeModel,
             sources: ragResponse.sources.map((source) => ({
                 document: source.document,
                 pageNumber: source.pageNumber,

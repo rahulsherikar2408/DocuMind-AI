@@ -42,6 +42,7 @@ function ChatMessage({ message }: ChatMessageProps) {
             isAssistant ? "text-slate-400 dark:text-slate-500" : "text-indigo-200"
           }`}
         >
+          {isAssistant && message.model ? `${message.model} · ` : ""}
           {new Date(message.createdAt).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",

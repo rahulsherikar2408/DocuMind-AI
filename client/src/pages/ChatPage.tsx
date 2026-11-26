@@ -18,6 +18,8 @@ import { useCreateChat } from "../hooks/useCreateChat";
 import { useChat } from "../hooks/useChat";
 import { useChatMessages } from "../hooks/useChatMessages";
 import { useSendMessage } from "../hooks/useSendMessage";
+import { useCurrentSubscription } from "../hooks/useSubscription";
+import { useToast } from "../hooks/useToast";
 
 function ChatPage() {
   const { id } = useParams<{ id: string }>();
@@ -65,6 +67,10 @@ function ChatPage() {
     isError: isMessagesError,
     error: messagesError,
   } = useChatMessages(id || "");
+
+  const { data: subscription } = useCurrentSubscription();
+  const selectedModel = subscription?.selectedModel;
+  const toast = useToast();
 
   // Send a message
   const {
@@ -116,17 +122,18 @@ function ChatPage() {
           chatId: id,
           payload: {
             content: question.trim(),
+            model: selectedModel,
           },
         });
 
       } catch (error) {
         console.error("Failed to send message:", error);
-
-        setSendError(
+        const msg =
           error instanceof Error
             ? error.message
-            : "Failed to send message. Please try again."
-        );
+            : "Failed to send message. Please try again.";
+        setSendError(msg);
+        toast.error(msg, "Message Failed");
 
         // Refresh messages in case the user message was saved before the error
         queryClient.invalidateQueries({
@@ -134,7 +141,7 @@ function ChatPage() {
         });
       }
     },
-    [id, isSendingMessage, sendChatMessage, queryClient]
+    [id, isSendingMessage, sendChatMessage, queryClient, selectedModel, toast]
   );
 
   // Automatically send a suggested question exactly once
@@ -233,7 +240,7 @@ function ChatPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex h-[calc(100vh-145px)] min-h-[550px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950">
+      <div className="flex h-[calc(100dvh-128px)] min-h-[460px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950 sm:h-[calc(100dvh-145px)] sm:min-h-[550px]">
         {/* Chat Header */}
         <ChatHeader documentName={documentName} />
 

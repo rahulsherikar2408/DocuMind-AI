@@ -2,6 +2,7 @@
 import mongoose from "mongoose";
 
 import Document from "../models/Document.js";
+import { resolveModelForUser } from "../config/plans.js";
 import generateSuggestedQuestions from "../services/suggestedQuestionsService.js";
 
 export const getSuggestedQuestions = async (req, res, next) => {
@@ -32,9 +33,11 @@ export const getSuggestedQuestions = async (req, res, next) => {
         }
 
         // Generate suggested questions
+        const activeModel = resolveModelForUser(req.dbUser);
         const questions = await generateSuggestedQuestions(
             document._id,
-            userId
+            userId,
+            activeModel
         );
 
         return res.status(200).json({

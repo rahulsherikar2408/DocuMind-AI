@@ -7,4 +7,6 @@ export interface Document {
     size: string;
     pages: number;
     status: DocumentStatus;
+    extractionMethod?: "text" | "ocr";
+    isScanned?: boolean;
 }

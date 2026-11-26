@@ -39,6 +39,8 @@ const requireAuth = async(req, res, next) => {
                 $setOnInsert: {
                     clerkId: userId,
                     plan: "free",
+                    selectedModel: "gemini-3.1-flash-lite",
+                    subscriptionStatus: "active",
                     isActive: true,
                 },
             },

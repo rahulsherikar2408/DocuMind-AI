@@ -21,9 +21,21 @@ body {
   color: #0f172a;
   transition-property: color, background-color, border-color;
   transition-duration: 200ms;
+  -webkit-font-smoothing: antialiased;
 }
 
 html.dark body {
   background-color: #020617;
   color: #f8fafc;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

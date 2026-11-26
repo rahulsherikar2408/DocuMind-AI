@@ -1,16 +1,51 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
   FileText,
-  MoreHorizontal,
   MessageSquare,
   Download,
+  Trash2,
 } from "lucide-react";
 
 import { useDocuments } from "../../hooks/useDocuments";
+import { useDeleteDocument } from "../../hooks/useDeleteDocument";
+import { useToast } from "../../hooks/useToast";
+import DeleteDocumentModal from "../documents/DeleteDocumentModal";
+import type { Document as ApiDocument } from "../../services/documentService";
 
 function DocumentTable() {
   const { data: documents = [], isLoading, error } = useDocuments();
+  const deleteMutation = useDeleteDocument();
+  const toast = useToast();
+  const [documentToDelete, setDocumentToDelete] = useState<ApiDocument | null>(
+    null
+  );
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDeleteConfirm = async () => {
+    if (!documentToDelete) return;
+
+    try {
+      setDeleteError(null);
+      const deletedName = documentToDelete.fileName;
+      await deleteMutation.mutateAsync(documentToDelete._id);
+      setDocumentToDelete(null);
+      toast.success(
+        `"${deletedName}" and its related chats were deleted.`,
+        "Document Deleted"
+      );
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { message?: string } } };
+      const msg =
+        apiErr.response?.data?.message ||
+        (err instanceof Error
+          ? err.message
+          : "Failed to delete document. Please try again.");
+      setDeleteError(msg);
+      toast.error(msg, "Delete Failed");
+    }
+  };
 
   const statusStyles = {
     completed: "bg-green-50 text-green-700 dark:bg-green-950/60 dark:text-green-400",
@@ -169,10 +204,14 @@ function DocumentTable() {
 
                       <button
                         type="button"
-                        className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                        title="More options"
+                        onClick={() => {
+                          setDeleteError(null);
+                          setDocumentToDelete(document);
+                        }}
+                        className="rounded-lg p-2 text-slate-500 transition hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950/40 dark:hover:text-red-400 cursor-pointer"
+                        title="Delete document"
                       >
-                        <MoreHorizontal size={18} />
+                        <Trash2 size={17} />
                       </button>
                     </div>
                   </td>
@@ -202,6 +241,17 @@ function DocumentTable() {
           </Link>
         </div>
       ))}
+
+      <DeleteDocumentModal
+        fileName={documentToDelete?.fileName || null}
+        isDeleting={deleteMutation.isPending}
+        error={deleteError}
+        onCancel={() => {
+          setDocumentToDelete(null);
+          setDeleteError(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 }
