@@ -6,7 +6,14 @@ import helmet from "helmet";
 import multer from "multer";
 
 import dns from "node:dns";
-dns.setServers(["8.8.8.8", "1.1.1.1"]);
+
+if (process.env.MONGODB_URI && process.env.MONGODB_URI.startsWith('mongodb+srv://')) {
+    try {
+        dns.setServers(['8.8.8.8', '1.1.1.1']);
+    } catch (e) {
+        console.warn("Failed to set custom DNS servers:", e.message);
+    }
+}
 
 import { clerkMiddleware, getAuth } from "@clerk/express";
 
