@@ -7,12 +7,16 @@ import multer from "multer";
 
 import dns from "node:dns";
 
-if (process.env.MONGODB_URI && process.env.MONGODB_URI.startsWith('mongodb+srv://')) {
-    try {
-        dns.setServers(['8.8.8.8', '1.1.1.1']);
-    } catch (e) {
-        console.warn("Failed to set custom DNS servers:", e.message);
-    }
+if (
+  !process.env.VERCEL &&
+  process.env.MONGODB_URI &&
+  process.env.MONGODB_URI.startsWith("mongodb+srv://")
+) {
+  try {
+    dns.setServers(["8.8.8.8", "1.1.1.1"]);
+  } catch (e) {
+    console.warn("Failed to set custom DNS servers:", e.message);
+  }
 }
 
 import { clerkMiddleware, getAuth } from "@clerk/express";
@@ -55,6 +59,16 @@ app.get("/api/health", (req, res) => {
     success: true,
     message: "DocuMind AI API is running!",
   });
+});
+
+// Ensure database connection before handling API routes (needed for serverless environments)
+app.use("/api", async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 // API routes
@@ -143,4 +157,8 @@ const startServer = async () => {
   }
 };
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;

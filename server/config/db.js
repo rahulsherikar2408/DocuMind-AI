@@ -1,14 +1,41 @@
 import mongoose from "mongoose";
 
-const connectDB = async() => {
-    try {
-        const connection = await mongoose.connect(process.env.MONGODB_URI);
+let cachedConnection = null;
+let connectionPromise = null;
 
-        console.log(`MongoDB Connected: ${connection.connection.host}`);
-    } catch (error) {
-        console.error("MongoDB connection failed:", error.message);
-        process.exit(1);
+const connectDB = async () => {
+  if (cachedConnection && mongoose.connection.readyState === 1) {
+    return cachedConnection;
+  }
+
+  if (!process.env.MONGODB_URI) {
+    const error = new Error("Missing MONGODB_URI in environment variables.");
+    console.error("MongoDB connection failed:", error.message);
+    if (!process.env.VERCEL) {
+      process.exit(1);
     }
+    throw error;
+  }
+
+  try {
+    if (!connectionPromise) {
+      connectionPromise = mongoose.connect(process.env.MONGODB_URI).then((conn) => {
+        cachedConnection = conn;
+        console.log(`MongoDB Connected: ${conn.connection.host}`);
+        return conn;
+      });
+    }
+
+    return await connectionPromise;
+  } catch (error) {
+    connectionPromise = null;
+    cachedConnection = null;
+    console.error("MongoDB connection failed:", error.message);
+    if (!process.env.VERCEL) {
+      process.exit(1);
+    }
+    throw error;
+  }
 };
 
 export default connectDB;
