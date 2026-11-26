@@ -16,6 +16,7 @@ import uploadPDFToCloudinary, {
 } from "../services/cloudinaryService.js";
 import processAndStorePDF from "../services/documentProcessingService.js";
 import { inspectPDFText } from "../services/pdfService.js";
+import { invalidateUsageCache } from "./subscriptionController.js";
 
 export const getDocumentDownloadUrl = (doc) => {
   if (!doc) return "";
@@ -252,6 +253,7 @@ export const uploadDocument = async (req, res) => {
 
     // Step 5: Save updated document information.
     await document.save();
+    invalidateUsageCache(req.dbUser._id);
 
     const documentResponse = document.toObject();
     documentResponse.storageUrl = getDocumentDownloadUrl(documentResponse);
@@ -365,6 +367,7 @@ export const deleteDocument = async (req, res) => {
       _id: document._id,
       user: req.dbUser._id,
     });
+    invalidateUsageCache(req.dbUser._id);
 
     res.status(200).json({
       success: true,

@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useAuth } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -18,6 +18,12 @@ function ApiProvider({ children }: ApiProviderProps) {
   const queryClient = useQueryClient();
   const toast = useToast();
 
+  const initializedRef = useRef(false);
+  const previousUserIdRef = useRef<string | null | undefined>(undefined);
+
+  // Synchronously update token getter so any immediate queries have access to it
+  setClerkTokenGetter(getToken);
+
   useEffect(() => {
     setClerkTokenGetter(getToken);
   }, [getToken]);
@@ -25,7 +31,24 @@ function ApiProvider({ children }: ApiProviderProps) {
   useEffect(() => {
     if (!isLoaded) return;
 
-    queryClient.clear();
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      previousUserIdRef.current = userId ?? null;
+      return;
+    }
+
+    const prevUserId = previousUserIdRef.current;
+    const currentUserId = userId ?? null;
+
+    // Only clear cached queries when user identity actually changes (switch user or sign out)
+    if (prevUserId !== currentUserId) {
+      queryClient.clear();
+      try {
+        localStorage.removeItem("DOCUMIND_QUERY_CACHE");
+      } catch {
+        // Ignore storage errors in restricted environments
+      }
+    }
 
     try {
       const prevState = sessionStorage.getItem(AUTH_STATE_KEY);
@@ -52,6 +75,8 @@ function ApiProvider({ children }: ApiProviderProps) {
     } catch {
       // Ignore storage errors in restricted environments
     }
+
+    previousUserIdRef.current = currentUserId;
   }, [userId, isLoaded, queryClient, toast]);
 
   return <>{children}</>;

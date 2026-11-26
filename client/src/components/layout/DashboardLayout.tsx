@@ -378,6 +378,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
                     onClick={() => {
                       setMenuOpen(false);
                       try {
+                        localStorage.removeItem("DOCUMIND_QUERY_CACHE");
                         sessionStorage.setItem(AUTH_STATE_KEY, "signed_out");
                         sessionStorage.setItem(
                           PENDING_TOAST_KEY,

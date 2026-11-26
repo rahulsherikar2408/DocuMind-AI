@@ -5,20 +5,28 @@ import { ensureExpiryReminderNotification } from "../services/notificationServic
 // GET /api/notifications
 export const getNotifications = async (req, res) => {
   try {
-    await ensureExpiryReminderNotification(req.dbUser);
+    // Run reminder check in background without blocking notification retrieval
+    ensureExpiryReminderNotification(req.dbUser).catch((err) =>
+      console.warn("Expiry reminder background check failed:", err.message)
+    );
 
-    const [notifications, unreadCount] = await Promise.all([
-      Notification.find({
-        user: req.dbUser._id,
-      })
-        .sort({ createdAt: -1 })
-        .limit(30)
-        .lean(),
-      Notification.countDocuments({
+    const notifications = await Notification.find({
+      user: req.dbUser._id,
+    })
+      .sort({ createdAt: -1 })
+      .limit(30)
+      .lean();
+
+    // If total notifications are under limit, calculate unread count in memory to avoid extra DB query
+    let unreadCount = 0;
+    if (notifications.length < 30) {
+      unreadCount = notifications.reduce((acc, n) => acc + (n.isRead ? 0 : 1), 0);
+    } else {
+      unreadCount = await Notification.countDocuments({
         user: req.dbUser._id,
         isRead: false,
-      }),
-    ]);
+      });
+    }
 
     res.status(200).json({
       success: true,

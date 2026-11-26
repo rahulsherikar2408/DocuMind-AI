@@ -19,11 +19,17 @@ const connectDB = async () => {
 
   try {
     if (!connectionPromise) {
-      connectionPromise = mongoose.connect(process.env.MONGODB_URI).then((conn) => {
-        cachedConnection = conn;
-        console.log(`MongoDB Connected: ${conn.connection.host}`);
-        return conn;
-      });
+      connectionPromise = mongoose
+        .connect(process.env.MONGODB_URI, {
+          maxPoolSize: 30,
+          minPoolSize: 5,
+          serverSelectionTimeoutMS: 5000,
+        })
+        .then((conn) => {
+          cachedConnection = conn;
+          console.log(`MongoDB Connected: ${conn.connection.host}`);
+          return conn;
+        });
     }
 
     return await connectionPromise;

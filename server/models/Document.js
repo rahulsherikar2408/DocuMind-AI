@@ -84,6 +84,9 @@ documentSchema.index({ user: 1, createdAt: -1});
 // Filter documents by user and processing status
 documentSchema.index({ user: 1, status: 1});
 
+// Efficiently count today's uploads and query user documents with status
+documentSchema.index({ user: 1, createdAt: -1, status: 1 });
+
 const Document = mongoose.models.Document || mongoose.model("Document", documentSchema);
 
 export default Document;

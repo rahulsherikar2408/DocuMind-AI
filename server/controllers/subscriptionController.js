@@ -11,10 +11,31 @@ import Billing from "../models/Billing.js";
 import Document from "../models/Document.js";
 import User from "../models/User.js";
 import { createSubscriptionNotification } from "../services/notificationService.js";
+import { invalidateUserCache } from "../middlewares/requireAuth.js";
 
 const SUBSCRIPTION_DURATION_DAYS = 30;
 
+const usageCache = new Map();
+const USAGE_CACHE_TTL_MS = 15 * 1000; // 15 seconds
+
+export const invalidateUsageCache = (userId) => {
+  if (userId) {
+    usageCache.delete(userId.toString());
+  }
+};
+
 export const getUserUsageSummary = async (dbUser) => {
+  const userIdStr = dbUser._id.toString();
+  const cached = usageCache.get(userIdStr);
+  const now = Date.now();
+
+  if (cached && now - cached.timestamp < USAGE_CACHE_TTL_MS) {
+    return {
+      ...cached.data,
+      activeModel: resolveModelForUser(dbUser),
+    };
+  }
+
   const planConfig = getPlanConfig(dbUser.plan);
   const startOfDay = getStartOfToday();
 
@@ -30,7 +51,7 @@ export const getUserUsageSummary = async (dbUser) => {
       ? null
       : Math.max(0, dailyUploadLimit - todayUploadsCount);
 
-  return {
+  const summary = {
     todayUploadsCount,
     dailyUploadLimit,
     remainingUploads,
@@ -38,6 +59,14 @@ export const getUserUsageSummary = async (dbUser) => {
     allowedModels: planConfig.allowedModels,
     activeModel: resolveModelForUser(dbUser),
   };
+
+  usageCache.set(userIdStr, { data: summary, timestamp: now });
+  if (usageCache.size > 500) {
+    const oldestKey = usageCache.keys().next().value;
+    if (oldestKey) usageCache.delete(oldestKey);
+  }
+
+  return summary;
 };
 
 // GET /api/subscriptions/plans
@@ -281,6 +310,9 @@ export const verifySubscriptionPayment = async (req, res) => {
       { new: true, runValidators: true }
     );
 
+    invalidateUserCache(req.dbUser._id);
+    invalidateUsageCache(req.dbUser._id);
+
     const usage = await getUserUsageSummary(updatedUser);
 
     await createSubscriptionNotification({
@@ -400,6 +432,9 @@ export const downgradeToFree = async (req, res) => {
       },
       { new: true, runValidators: true }
     );
+
+    invalidateUserCache(dbUser._id);
+    invalidateUsageCache(dbUser._id);
 
     const billing = await Billing.create({
       user: dbUser._id,

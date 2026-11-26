@@ -1,6 +1,10 @@
 import { getPlanConfig, resolveModelForUser } from "../config/plans.js";
 import User from "../models/User.js";
-import { getUserUsageSummary } from "./subscriptionController.js";
+import {
+  getUserUsageSummary,
+  invalidateUsageCache,
+} from "./subscriptionController.js";
+import { invalidateUserCache } from "../middlewares/requireAuth.js";
 
 export const getCurrentUser = async (req, res) => {
   try {
@@ -51,6 +55,9 @@ export const updateSelectedModel = async (req, res) => {
       { $set: { selectedModel: model } },
       { new: true, runValidators: true }
     );
+
+    invalidateUserCache(dbUser._id);
+    invalidateUsageCache(dbUser._id);
 
     res.status(200).json({
       success: true,
