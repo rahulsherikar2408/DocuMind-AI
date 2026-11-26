@@ -17,6 +17,7 @@ import {
 import DashboardLayout from "../components/layout/DashboardLayout";
 import DocumentInfo from "../components/documents/DocumentInfo";
 import DeleteDocumentModal from "../components/documents/DeleteDocumentModal";
+import MarkdownRenderer from "../components/common/MarkdownRenderer";
 
 import { useDocument } from "../hooks/useDocuments";
 import { useCreateChat } from "../hooks/useCreateChat";
@@ -432,9 +433,7 @@ function DocumentDetails() {
               </div>
             </div>
 
-            <div className="whitespace-pre-wrap text-sm leading-7 text-gray-700 dark:text-slate-200">
-              {summaryData.summary}
-            </div>
+            <MarkdownRenderer content={summaryData.summary} />
 
             <div className="mt-5 border-t border-gray-100 pt-4 dark:border-slate-800">
               <p className="text-xs text-gray-400 dark:text-slate-500">

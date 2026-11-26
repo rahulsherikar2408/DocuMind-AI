@@ -21,7 +21,7 @@ function SourceReference({ sources }: SourceReferenceProps) {
         Sources
       </p>
 
-      <div className="space-y-2">
+      <div className="grid gap-2 sm:grid-cols-2">
         {sources.map((source, index) => {
           const document =
             typeof source.document === "object" &&
@@ -29,10 +29,12 @@ function SourceReference({ sources }: SourceReferenceProps) {
               ? source.document
               : null;
 
+          const docKey = document?._id || String(source.document);
+
           return (
             <div
-              key={`${source.document}-${source.pageNumber}-${source.chunkIndex}-${index}`}
-              className="rounded-lg border border-indigo-100 bg-indigo-50 p-3 dark:border-indigo-900/50 dark:bg-indigo-950/40"
+              key={`${docKey}-${source.pageNumber}-${source.chunkIndex}-${index}`}
+              className="rounded-lg border border-indigo-100 bg-indigo-50/70 p-3 dark:border-indigo-900/50 dark:bg-indigo-950/40"
             >
               <div className="flex items-start gap-2">
                 <FileText
@@ -40,18 +42,18 @@ function SourceReference({ sources }: SourceReferenceProps) {
                   className="mt-0.5 shrink-0 text-indigo-600 dark:text-indigo-400"
                 />
 
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
                     Page {source.pageNumber}
                   </p>
 
                   {document?.fileName && (
-                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                    <p className="mt-0.5 truncate text-xs text-slate-600 dark:text-slate-300">
                       {document.fileName}
                     </p>
                   )}
 
-                  <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                  <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
                     Source section {source.chunkIndex + 1}
                   </p>
                 </div>
